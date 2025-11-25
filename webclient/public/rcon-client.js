@@ -1,0 +1,238 @@
+/**
+ * ACE RCON WebSocket Client Library
+ * Communicates with RCON server via WebSocket
+ *
+ * Usage:
+ * const client = new RconClient('localhost', 2948);
+ * await client.connect();
+ * await client.authenticate('your_password');
+ * const response = await client.send('status');
+ * client.on('response', (data) => { console.log(data); });
+ */
+
+class RconClient {
+    constructor(host = null, port = null) {
+        // Use current window location if not specified
+        this.host = host || window.location.hostname;
+        this.port = port || window.location.port || 2948;
+        this.ws = null;
+        this.isConnected = false;
+        this.isAuthenticated = false;
+        this.requestId = 0;
+        this.pendingRequests = new Map();
+        this.listeners = new Map();
+        this.reconnectDelay = 5000;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+    }
+
+    /**
+     * Connect to RCON server
+     * @returns {Promise} Resolves when connected
+     */
+    connect() {
+        return new Promise((resolve, reject) => {
+            try {
+                const wsUrl = `ws://${this.host}:${this.port}/rcon`;
+                console.log(`[RconClient] Connecting to ${wsUrl}`);
+
+                this.ws = new WebSocket(wsUrl);
+
+                this.ws.onopen = () => {
+                    console.log('[RconClient] Connected');
+                    this.isConnected = true;
+                    this.reconnectAttempts = 0;
+                    this.emit('connected');
+                    resolve();
+                };
+
+                this.ws.onmessage = (event) => {
+                    try {
+                        const response = JSON.parse(event.data);
+                        console.log('[RconClient] Received:', response);
+
+                        // Check if this matches a pending request
+                        const requestId = response.Identifier;
+                        if (this.pendingRequests.has(requestId)) {
+                            const resolver = this.pendingRequests.get(requestId);
+                            this.pendingRequests.delete(requestId);
+                            clearTimeout(resolver.timeout);
+                            resolver.resolve(response);
+                        }
+
+                        // Also emit general response event
+                        this.emit('response', response);
+                    } catch (error) {
+                        console.error('[RconClient] Error parsing message:', error);
+                    }
+                };
+
+                this.ws.onerror = (event) => {
+                    console.error('[RconClient] WebSocket error:', event);
+                    this.emit('error', event);
+                };
+
+                this.ws.onclose = () => {
+                    console.log('[RconClient] Disconnected');
+                    this.isConnected = false;
+                    this.isAuthenticated = false;
+                    this.emit('disconnected');
+
+                    // Try to reconnect
+                    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                        this.reconnectAttempts++;
+                        console.log(`[RconClient] Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+                        setTimeout(() => {
+                            this.connect().catch(err => console.error('[RconClient] Reconnect failed:', err));
+                        }, this.reconnectDelay);
+                    } else {
+                        console.log('[RconClient] Max reconnect attempts reached');
+                        reject(new Error('Connection failed'));
+                    }
+                };
+            } catch (error) {
+                console.error('[RconClient] Connection error:', error);
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Authenticate with RCON server
+     * @param {string} password - RCON password
+     * @returns {Promise} Resolves when authenticated
+     */
+    authenticate(password) {
+        return this.send('auth', [password]).then(response => {
+            if (response.Status === 'authenticated' || response.Status === 'success') {
+                this.isAuthenticated = true;
+                this.emit('authenticated');
+                return response;
+            } else {
+                throw new Error(response.Message || 'Authentication failed');
+            }
+        });
+    }
+
+    /**
+     * Send RCON command
+     * @param {string} command - Command name
+     * @param {Array} args - Command arguments
+     * @returns {Promise} Resolves with response
+     */
+    send(command, args = []) {
+        return new Promise((resolve, reject) => {
+            if (!this.isConnected) {
+                reject(new Error('Not connected to server'));
+                return;
+            }
+
+            const requestId = ++this.requestId;
+            const message = {
+                Command: command,
+                Args: args,
+                Identifier: requestId
+            };
+
+            console.log('[RconClient] Sending:', message);
+
+            try {
+                // Set up timeout
+                const timeout = setTimeout(() => {
+                    this.pendingRequests.delete(requestId);
+                    reject(new Error('Command timeout'));
+                }, 30000);
+
+                // Store pending request
+                this.pendingRequests.set(requestId, {
+                    resolve,
+                    reject,
+                    timeout
+                });
+
+                // Send message
+                this.ws.send(JSON.stringify(message));
+            } catch (error) {
+                this.pendingRequests.delete(requestId);
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Register event listener
+     * @param {string} event - Event name (connected, authenticated, response, error, disconnected)
+     * @param {Function} callback - Callback function
+     */
+    on(event, callback) {
+        if (!this.listeners.has(event)) {
+            this.listeners.set(event, []);
+        }
+        this.listeners.get(event).push(callback);
+        console.log(`[RconClient] Event listener registered: ${event}`);
+    }
+
+    /**
+     * Remove event listener
+     * @param {string} event - Event name
+     * @param {Function} callback - Callback function
+     */
+    off(event, callback) {
+        if (!this.listeners.has(event)) return;
+        const listeners = this.listeners.get(event);
+        const index = listeners.indexOf(callback);
+        if (index > -1) {
+            listeners.splice(index, 1);
+        }
+    }
+
+    /**
+     * Emit event
+     * @param {string} event - Event name
+     * @param {any} data - Event data
+     */
+    emit(event, data) {
+        if (!this.listeners.has(event)) return;
+        const listeners = this.listeners.get(event);
+        listeners.forEach(callback => {
+            try {
+                callback(data);
+            } catch (error) {
+                console.error(`[RconClient] Error in ${event} listener:`, error);
+            }
+        });
+    }
+
+    /**
+     * Disconnect from server
+     */
+    disconnect() {
+        console.log('[RconClient] Disconnecting...');
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+        this.isConnected = false;
+        this.isAuthenticated = false;
+    }
+
+    /**
+     * Get connection status
+     * @returns {Object} Status object
+     */
+    getStatus() {
+        return {
+            isConnected: this.isConnected,
+            isAuthenticated: this.isAuthenticated,
+            pendingRequests: this.pendingRequests.size,
+            requestId: this.requestId
+        };
+    }
+}
+
+// Export for use in HTML
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = RconClient;
+}
+
+console.log('[rcon-client.js] RconClient library loaded');
