@@ -111,16 +111,19 @@ public class RconHttpServer
             var request = context.Request;
             var response = context.Response;
 
+            ModManager.Log($"[RCON] HTTP request: {request.HttpMethod} {request.Url} (WebSocket: {request.IsWebSocketRequest})");
+
             // Check if WebSocket upgrade request
             if (request.IsWebSocketRequest)
             {
-                if (settings.EnableLogging)
-                    ModManager.Log($"[RCON] WebSocket upgrade request: {request.Url}");
+                ModManager.Log($"[RCON] WebSocket upgrade request: {request.Url}");
 
                 try
                 {
                     var wsContext = await context.AcceptWebSocketAsync(null);
                     var webSocket = wsContext.WebSocket;
+
+                    ModManager.Log($"[RCON] WebSocket accepted, state: {webSocket.State}");
 
                     // Handle WebSocket connection
                     await RconWebSocketHandler.HandleWebSocketAsync(webSocket, settings);
@@ -128,8 +131,12 @@ public class RconHttpServer
                 catch (Exception ex)
                 {
                     ModManager.Log($"[RCON] ERROR handling WebSocket: {ex.Message}", ModManager.LogLevel.Error);
-                    response.StatusCode = 500;
-                    response.Close();
+                    try
+                    {
+                        response.StatusCode = 500;
+                        response.Close();
+                    }
+                    catch { }
                 }
             }
             else
@@ -166,8 +173,7 @@ public class RconHttpServer
         // Remove leading slash
         path = path.TrimStart('/');
 
-        if (settings.EnableLogging)
-            ModManager.Log($"[RCON] Static file request: {path}");
+        ModManager.Log($"[RCON] Static file request: {path}");
 
         try
         {

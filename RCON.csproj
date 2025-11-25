@@ -81,6 +81,14 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
+
+	<!--Embed web client files as resources-->
+	<ItemGroup>
+		<EmbeddedResource Include="webclient/public/index.html" />
+		<EmbeddedResource Include="webclient/public/style.css" />
+		<EmbeddedResource Include="webclient/src/rcon-client.js" />
+		<EmbeddedResource Include="webclient/src/ui.js" />
+	</ItemGroup>
 	<!--More cleanup in Release mode?-->
 	<Target Name="CleanupFilesRelease" AfterTargets="PostBuildEvent" Condition="$(ConfigurationName) == Release">
 		<ItemGroup>

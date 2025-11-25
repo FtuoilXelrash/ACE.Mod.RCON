@@ -18,7 +18,7 @@ public static class RconWebSocketHandler
             try
             {
                 // Create a pseudo-connection object for protocol handling
-                var wsConnection = new WebSocketRconConnection(webSocket);
+                var wsConnection = new WebSocketRconConnection(webSocket, settings);
 
                 ModManager.Log("[RCON] WebSocket connection established");
 
@@ -138,11 +138,11 @@ public class WebSocketRconConnection : RconConnection
     private readonly WebSocket webSocket;
     private bool isAuthenticated = false;
 
-    public WebSocketRconConnection(WebSocket webSocket)
+    public WebSocketRconConnection(WebSocket webSocket, Settings settings)
         : base(
             connectionId: System.Threading.Interlocked.Increment(ref connectionIdCounter),
             clientSocket: null!,
-            settings: new Settings())
+            settings: settings)
     {
         this.webSocket = webSocket;
     }

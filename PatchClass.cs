@@ -5,6 +5,7 @@ namespace RCON;
 public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
     private static RconServer? rconServer;
+    private static RconHttpServer? httpServer;
 
     public override Task OnStartSuccess()
     {
@@ -17,6 +18,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
             if (Settings.RconEnabled)
             {
+                // Start TCP RCON server
                 ModManager.Log($"[RCON] Starting RCON server on port {Settings.RconPort}...");
                 rconServer = new RconServer(Settings);
                 rconServer.Start();
@@ -24,6 +26,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 ModManager.Log($"[RCON] Listening for RCON connections on port {Settings.RconPort}");
                 ModManager.Log($"[RCON] Max connections: {Settings.MaxConnections}");
                 ModManager.Log($"[RCON] Verbose logging: {(Settings.EnableLogging ? "enabled" : "disabled")}");
+
+                // Start HTTP/WebSocket server for web client
+                ModManager.Log($"[RCON] Starting web client server...");
+                httpServer = new RconHttpServer(Settings);
+                httpServer.Start();
+                ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:2948/");
             }
             else
             {
@@ -42,6 +50,15 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         try
         {
+            // Stop HTTP server
+            if (httpServer != null)
+            {
+                ModManager.Log($"[RCON] Stopping web client server...");
+                httpServer.Stop();
+                httpServer = null;
+            }
+
+            // Stop TCP RCON server
             if (rconServer != null)
             {
                 ModManager.Log($"[RCON] Stopping RCON server...");
