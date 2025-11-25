@@ -1,0 +1,30 @@
+{
+  "name": "ACE RCON Web Client",
+  "short_name": "RCON",
+  "description": "Web-based RCON interface for ACE Emulator server administration",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#ff6b00",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a1a' width='192' height='192'/><rect fill='%23ff6b00' x='48' y='48' width='96' height='96'/><circle fill='%231a1a1a' cx='96' cy='96' r='24'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["productivity"],
+  "shortcuts": [
+    {
+      "name": "Server Status",
+      "short_name": "Status",
+      "description": "Check server status",
+      "url": "/?command=status",
+      "icons": []
+    }
+  ]
+}
