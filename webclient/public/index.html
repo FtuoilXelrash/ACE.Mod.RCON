@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACE RCON Web Client</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ACE RCON Web Client</h1>
+            <div id="status" class="status disconnected">
+                <span class="status-indicator"></span>
+                <span id="status-text">Disconnected</span>
+            </div>
+        </header>
+
+        <main>
+            <section id="console" class="console">
+                <div id="output" class="output">
+                    <div class="info-message">
+                        RCON Web Client - Ready for Implementation<br>
+                        <br>
+                        This is Phase 0 (Stub)<br>
+                        Full implementation scheduled for Phase 3+<br>
+                        <br>
+                        See WEBCLIENT_PROPOSAL.md for technical details
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <input type="text" id="command-input" placeholder="Enter RCON command..." disabled>
+                    <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
+                </div>
+            </section>
+
+            <aside id="sidebar" class="sidebar">
+                <section class="server-info">
+                    <h3>Server Info</h3>
+                    <div id="server-stats">
+                        <p>Status: <span id="server-status">Disconnected</span></p>
+                        <p>Players: <span id="player-count">0</span></p>
+                        <p>Uptime: <span id="uptime">0s</span></p>
+                    </div>
+                </section>
+
+                <section class="quick-commands">
+                    <h3>Quick Commands</h3>
+                    <button onclick="quickCommand('status')" disabled>Status</button>
+                    <button onclick="quickCommand('players')" disabled>Player List</button>
+                    <button onclick="quickCommand('save')" disabled>Save World</button>
+                    <button onclick="quickCommand('help')" disabled>Help</button>
+                </section>
+            </aside>
+        </main>
+
+        <footer>
+            <p>ACE RCON Web Client v1.0 (Phase 0 - Stub)</p>
+            <p><a href="https://github.com/ACEmulator/ACE" target="_blank">ACE Emulator</a></p>
+        </footer>
+    </div>
+
+    <script src="rcon-client.js"></script>
+    <script>
+        // Phase 0: Stub implementation
+        // Real implementation comes in Phase 3+
+
+        console.log('ACE RCON Web Client - Phase 0 (Stub)');
+        console.log('Waiting for Phase 3+ implementation of RconHttpServer');
+        console.log('See WEBCLIENT_PROPOSAL.md for implementation plan');
+
+        function sendCommand() {
+            // TODO: Implement WebSocket communication
+            console.log('sendCommand() - Not implemented in Phase 0');
+        }
+
+        function quickCommand(cmd) {
+            // TODO: Implement quick command execution
+            console.log('quickCommand(' + cmd + ') - Not implemented in Phase 0');
+        }
+
+        // Load client library when available
+        document.addEventListener('DOMContentLoaded', function() {
+            // TODO: Initialize RconClient
+            // TODO: Connect to WebSocket
+            // TODO: Update UI with status
+        });
+    </script>
+</body>
+</html>
