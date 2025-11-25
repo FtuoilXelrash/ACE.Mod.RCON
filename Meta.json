@@ -1,0 +1,10 @@
+{
+  "Name": "RCON",
+  "Author": "",
+  "Description": "RCON mod - remote console access for server management",
+  "Version": "1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": false,
+  "ACEVersion": "0.0"
+}
