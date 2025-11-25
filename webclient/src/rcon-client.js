@@ -1,60 +1,97 @@
 /**
- * ACE RCON Web Client Library
+ * ACE RCON WebSocket Client Library
+ * Communicates with RCON server via WebSocket
  *
- * Handles WebSocket communication with RCON server
- * Implements RCON protocol over WebSocket transport
- *
- * Phase 0: Stub/Template
- * Phase 3+: Full implementation
+ * Usage:
+ * const client = new RconClient('localhost', 2948);
+ * await client.connect();
+ * await client.authenticate('your_password');
+ * const response = await client.send('status');
+ * client.on('response', (data) => { console.log(data); });
  */
 
 class RconClient {
-    /**
-     * Create RCON client instance
-     * @param {string} host - Server host (default: localhost)
-     * @param {number} port - Server port (default: 2948)
-     * @param {Object} options - Configuration options
-     */
-    constructor(host = 'localhost', port = 2948, options = {}) {
-        this.host = host;
-        this.port = port;
-        this.options = {
-            autoReconnect: true,
-            reconnectDelay: 5000,
-            requestTimeout: 30000,
-            ...options
-        };
-
+    constructor(host = null, port = null) {
+        // Use current window location if not specified
+        this.host = host || window.location.hostname;
+        this.port = port || window.location.port || 2948;
         this.ws = null;
         this.isConnected = false;
         this.isAuthenticated = false;
         this.requestId = 0;
         this.pendingRequests = new Map();
-        this.eventListeners = new Map();
-
-        console.log('RconClient created - Phase 0 (Stub)');
-        console.log(`Target: ws://${this.host}:${this.port}`);
+        this.listeners = new Map();
+        this.reconnectDelay = 5000;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
     }
 
     /**
-     * Connect to RCON WebSocket server
-     * @param {string} password - RCON password for authentication
-     * @returns {Promise} Resolves when connected and authenticated
+     * Connect to RCON server
+     * @returns {Promise} Resolves when connected
      */
-    connect(password = '') {
+    connect() {
         return new Promise((resolve, reject) => {
             try {
-                console.log(`[RconClient] Connecting to ws://${this.host}:${this.port}`);
+                const wsUrl = `ws://${this.host}:${this.port}/rcon`;
+                console.log(`[RconClient] Connecting to ${wsUrl}`);
 
-                // TODO: Implement actual WebSocket connection in Phase 3+
-                // this.ws = new WebSocket(`ws://${this.host}:${this.port}/rcon`);
+                this.ws = new WebSocket(wsUrl);
 
-                console.log('[RconClient] Phase 0 - WebSocket connection not implemented');
-                console.log('[RconClient] Implementation scheduled for Phase 3+');
+                this.ws.onopen = () => {
+                    console.log('[RconClient] Connected');
+                    this.isConnected = true;
+                    this.reconnectAttempts = 0;
+                    this.emit('connected');
+                    resolve();
+                };
 
-                // Phase 0: Reject with stub message
-                reject(new Error('WebSocket implementation pending (Phase 3+)'));
+                this.ws.onmessage = (event) => {
+                    try {
+                        const response = JSON.parse(event.data);
+                        console.log('[RconClient] Received:', response);
+
+                        // Check if this matches a pending request
+                        const requestId = response.Identifier;
+                        if (this.pendingRequests.has(requestId)) {
+                            const resolver = this.pendingRequests.get(requestId);
+                            this.pendingRequests.delete(requestId);
+                            clearTimeout(resolver.timeout);
+                            resolver.resolve(response);
+                        }
+
+                        // Also emit general response event
+                        this.emit('response', response);
+                    } catch (error) {
+                        console.error('[RconClient] Error parsing message:', error);
+                    }
+                };
+
+                this.ws.onerror = (event) => {
+                    console.error('[RconClient] WebSocket error:', event);
+                    this.emit('error', event);
+                };
+
+                this.ws.onclose = () => {
+                    console.log('[RconClient] Disconnected');
+                    this.isConnected = false;
+                    this.isAuthenticated = false;
+                    this.emit('disconnected');
+
+                    // Try to reconnect
+                    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                        this.reconnectAttempts++;
+                        console.log(`[RconClient] Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+                        setTimeout(() => {
+                            this.connect().catch(err => console.error('[RconClient] Reconnect failed:', err));
+                        }, this.reconnectDelay);
+                    } else {
+                        console.log('[RconClient] Max reconnect attempts reached');
+                        reject(new Error('Connection failed'));
+                    }
+                };
             } catch (error) {
+                console.error('[RconClient] Connection error:', error);
                 reject(error);
             }
         });
@@ -66,18 +103,24 @@ class RconClient {
      * @returns {Promise} Resolves when authenticated
      */
     authenticate(password) {
-        // TODO: Implement in Phase 3+
-        console.log('[RconClient] authenticate() - Phase 0 stub');
-        return Promise.reject(new Error('Not implemented in Phase 0'));
+        return this.send('auth', [password]).then(response => {
+            if (response.Status === 'authenticated' || response.Status === 'success') {
+                this.isAuthenticated = true;
+                this.emit('authenticated');
+                return response;
+            } else {
+                throw new Error(response.Message || 'Authentication failed');
+            }
+        });
     }
 
     /**
      * Send RCON command
-     * @param {string} command - Command to execute
-     * @param {Array} args - Command arguments (optional)
-     * @returns {Promise} Resolves with server response
+     * @param {string} command - Command name
+     * @param {Array} args - Command arguments
+     * @returns {Promise} Resolves with response
      */
-    sendCommand(command, args = []) {
+    send(command, args = []) {
         return new Promise((resolve, reject) => {
             if (!this.isConnected) {
                 reject(new Error('Not connected to server'));
@@ -91,135 +134,105 @@ class RconClient {
                 Identifier: requestId
             };
 
-            console.log('[RconClient] sendCommand() - Phase 0 stub', message);
-            reject(new Error('Command execution not implemented in Phase 0'));
+            console.log('[RconClient] Sending:', message);
 
-            // TODO: Implement in Phase 3+
-            // this.ws.send(JSON.stringify(message));
-            // this.pendingRequests.set(requestId, { resolve, reject, timeout });
-        });
-    }
-
-    /**
-     * Send raw RCON message
-     * @param {Object} message - Message object to send
-     * @returns {Promise} Resolves with server response
-     */
-    send(message) {
-        return new Promise((resolve, reject) => {
-            console.log('[RconClient] send() - Phase 0 stub', message);
-            reject(new Error('Message sending not implemented in Phase 0'));
-
-            // TODO: Implement in Phase 3+
-            // Validate message
-            // Assign request ID
-            // Send over WebSocket
-            // Handle response
-        });
-    }
-
-    /**
-     * Register event listener
-     * @param {string} event - Event name
-     * @param {Function} callback - Callback function
-     */
-    on(event, callback) {
-        if (!this.eventListeners.has(event)) {
-            this.eventListeners.set(event, []);
-        }
-        this.eventListeners.get(event).push(callback);
-        console.log(`[RconClient] Event listener registered: ${event}`);
-    }
-
-    /**
-     * Unregister event listener
-     * @param {string} event - Event name
-     * @param {Function} callback - Callback function
-     */
-    off(event, callback) {
-        if (!this.eventListeners.has(event)) return;
-        const listeners = this.eventListeners.get(event);
-        const index = listeners.indexOf(callback);
-        if (index > -1) {
-            listeners.splice(index, 1);
-        }
-        console.log(`[RconClient] Event listener unregistered: ${event}`);
-    }
-
-    /**
-     * Emit event to listeners
-     * @param {string} event - Event name
-     * @param {any} data - Event data
-     */
-    emit(event, data) {
-        if (!this.eventListeners.has(event)) return;
-        const listeners = this.eventListeners.get(event);
-        listeners.forEach(callback => {
             try {
-                callback(data);
+                // Set up timeout
+                const timeout = setTimeout(() => {
+                    this.pendingRequests.delete(requestId);
+                    reject(new Error('Command timeout'));
+                }, 30000);
+
+                // Store pending request
+                this.pendingRequests.set(requestId, {
+                    resolve,
+                    reject,
+                    timeout
+                });
+
+                // Send message
+                this.ws.send(JSON.stringify(message));
             } catch (error) {
-                console.error(`Error in ${event} listener:`, error);
+                this.pendingRequests.delete(requestId);
+                reject(error);
             }
         });
     }
 
     /**
-     * Check if connected
-     * @returns {boolean} Connection status
+     * Register event listener
+     * @param {string} event - Event name (connected, authenticated, response, error, disconnected)
+     * @param {Function} callback - Callback function
      */
-    isConnectedTo() {
-        return this.isConnected;
+    on(event, callback) {
+        if (!this.listeners.has(event)) {
+            this.listeners.set(event, []);
+        }
+        this.listeners.get(event).push(callback);
+        console.log(`[RconClient] Event listener registered: ${event}`);
     }
 
     /**
-     * Check if authenticated
-     * @returns {boolean} Authentication status
+     * Remove event listener
+     * @param {string} event - Event name
+     * @param {Function} callback - Callback function
      */
-    isAuthenticatedTo() {
-        return this.isAuthenticated;
+    off(event, callback) {
+        if (!this.listeners.has(event)) return;
+        const listeners = this.listeners.get(event);
+        const index = listeners.indexOf(callback);
+        if (index > -1) {
+            listeners.splice(index, 1);
+        }
+    }
+
+    /**
+     * Emit event
+     * @param {string} event - Event name
+     * @param {any} data - Event data
+     */
+    emit(event, data) {
+        if (!this.listeners.has(event)) return;
+        const listeners = this.listeners.get(event);
+        listeners.forEach(callback => {
+            try {
+                callback(data);
+            } catch (error) {
+                console.error(`[RconClient] Error in ${event} listener:`, error);
+            }
+        });
     }
 
     /**
      * Disconnect from server
      */
     disconnect() {
-        console.log('[RconClient] disconnect() called');
-
-        // TODO: Implement in Phase 3+
-        // if (this.ws) {
-        //     this.ws.close();
-        //     this.ws = null;
-        // }
-
+        console.log('[RconClient] Disconnecting...');
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
         this.isConnected = false;
         this.isAuthenticated = false;
-        this.pendingRequests.clear();
-        this.emit('disconnected');
     }
 
     /**
-     * Get connection statistics
-     * @returns {Object} Stats object
+     * Get connection status
+     * @returns {Object} Status object
      */
-    getStats() {
+    getStatus() {
         return {
-            connected: this.isConnected,
-            authenticated: this.isAuthenticated,
+            isConnected: this.isConnected,
+            isAuthenticated: this.isAuthenticated,
             pendingRequests: this.pendingRequests.size,
-            requestIdCounter: this.requestId
+            requestId: this.requestId
         };
     }
 }
 
-/**
- * Export for use in web client
- * Phase 0: Stub for testing framework
- * Phase 3+: Fully functional implementation
- */
+// Export for use in HTML
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = RconClient;
 }
 
-console.log('[rcon-client.js] RconClient library loaded - Phase 0 (Stub)');
-console.log('[rcon-client.js] Waiting for Phase 3+ implementation');
-console.log('[rcon-client.js] See WEBCLIENT_PROPOSAL.md for details');
+console.log('[rcon-client.js] RconClient library loaded');
