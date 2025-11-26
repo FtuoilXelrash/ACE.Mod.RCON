@@ -120,6 +120,11 @@ function onResponse(response) {
         }
     }
 
+    // Update sidebar with data if available
+    if (response.Data) {
+        updateSidebarPanel(response);
+    }
+
     // Display response
     if (response.Status === 'error') {
         addOutput(`Error: ${response.Message}`, 'error-message');
@@ -143,6 +148,43 @@ function onResponse(response) {
                 addOutput(JSON.stringify(response), 'response-message');
             }
         }
+    }
+}
+
+/**
+ * Update sidebar panel with status data
+ */
+function updateSidebarPanel(response) {
+    try {
+        const data = response.Data;
+        if (!data) return;
+
+        // Update from status command
+        if (data.Status || data.Uptime) {
+            const statusEl = document.getElementById('server-status');
+            const playerEl = document.getElementById('player-count');
+            const uptimeEl = document.getElementById('uptime');
+
+            if (statusEl && data.Status) {
+                statusEl.textContent = data.Status;
+            }
+            if (playerEl && data.CurrentPlayers !== undefined) {
+                playerEl.textContent = data.CurrentPlayers;
+            }
+            if (uptimeEl && data.Uptime) {
+                uptimeEl.textContent = data.Uptime;
+            }
+        }
+
+        // Update from players command
+        if (data.players && data.count !== undefined) {
+            const playerEl = document.getElementById('player-count');
+            if (playerEl) {
+                playerEl.textContent = data.count;
+            }
+        }
+    } catch (e) {
+        console.error('[UI] Error updating sidebar:', e);
     }
 }
 
