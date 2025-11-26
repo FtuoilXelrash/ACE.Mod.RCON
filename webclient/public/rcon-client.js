@@ -21,9 +21,18 @@ class RconClient {
         this.requestId = 0;
         this.pendingRequests = new Map();
         this.listeners = new Map();
-        this.reconnectDelay = 5000;
+        this.reconnectDelay = 15000;  // Will be updated from server config
         this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
+        this.maxReconnectAttempts = 42;  // Will be updated from server config
+    }
+
+    /**
+     * Set reconnect configuration from server
+     */
+    setReconnectConfig(maxAttempts, delayMs) {
+        this.maxReconnectAttempts = maxAttempts || 42;
+        this.reconnectDelay = delayMs || 15000;
+        console.log(`[RconClient] Reconnect config updated: ${this.maxReconnectAttempts} attempts, ${this.reconnectDelay}ms delay`);
     }
 
     /**

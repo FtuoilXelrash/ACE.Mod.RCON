@@ -7,6 +7,7 @@ let client = null;
 let commandHistory = [];
 let historyIndex = 0;
 let autoRefreshPlayers = true;
+let clientConfig = null;
 
 /**
  * Initialize the UI and WebSocket client
@@ -45,6 +46,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 navigateHistory(1);
             }
         });
+    }
+
+    // Restore auto-refresh checkbox state from localStorage
+    const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
+    if (autoRefreshCheckbox) {
+        const savedAutoRefresh = localStorage.getItem('autoRefreshPlayers');
+        if (savedAutoRefresh !== null) {
+            autoRefreshPlayers = savedAutoRefresh === 'true';
+            autoRefreshCheckbox.checked = autoRefreshPlayers;
+            console.log('[UI] Auto-refresh restored from localStorage:', autoRefreshPlayers);
+        }
     }
 
     // Auto-connect on load
@@ -99,6 +111,9 @@ function onAuthenticated(authResponse) {
     if (authResponse && authResponse.Data) {
         updateSidebarPanel(authResponse);
     }
+
+    // Fetch client configuration from server
+    fetchClientConfig();
 
     // Enable UI
     enableCommands();
@@ -559,7 +574,44 @@ function handlePlayerEvent(response) {
  */
 function toggleAutoRefresh(enabled) {
     autoRefreshPlayers = enabled;
+    // Persist to localStorage
+    localStorage.setItem('autoRefreshPlayers', enabled.toString());
     console.log('[UI] Auto-refresh players:', enabled ? 'enabled' : 'disabled');
+}
+
+/**
+ * Fetch client configuration from server
+ */
+async function fetchClientConfig() {
+    if (!client || !client.isAuthenticated) {
+        console.log('[UI] Not authenticated, skipping config fetch');
+        return;
+    }
+
+    try {
+        const response = await client.send('config', []);
+        if (response.Data) {
+            clientConfig = response.Data;
+            console.log('[UI] Client config received:', clientConfig);
+
+            // Update reconnect settings in client
+            if (clientConfig.MaxReconnectAttempts && clientConfig.ReconnectDelayMs) {
+                client.setReconnectConfig(clientConfig.MaxReconnectAttempts, clientConfig.ReconnectDelayMs);
+            }
+
+            // If server has AutoRefreshPlayers setting and we haven't overridden it locally, use server default
+            if (clientConfig.AutoRefreshPlayers !== undefined && localStorage.getItem('autoRefreshPlayers') === null) {
+                autoRefreshPlayers = clientConfig.AutoRefreshPlayers;
+                const checkbox = document.getElementById('auto-refresh-checkbox');
+                if (checkbox) {
+                    checkbox.checked = autoRefreshPlayers;
+                }
+                console.log('[UI] Auto-refresh set from server config:', autoRefreshPlayers);
+            }
+        }
+    } catch (error) {
+        console.error('[UI] Error fetching client config:', error);
+    }
 }
 
 console.log('[ui.js] UI module loaded');

@@ -77,6 +77,7 @@ public static class RconProtocol
             "status" => HandleStatus(request),
             "players" => HandlePlayers(request),
             "landblocks" => HandleLandblocks(request),
+            "config" => HandleConfig(request, settings),
             "help" => HandleHelp(request),
             _ => new RconResponse
             {
@@ -389,5 +390,26 @@ Auth: {""Command"": ""auth"", ""Password"": ""your_password"", ""Identifier"": 1
         {
             return "Unknown";
         }
+    }
+
+    /// <summary>
+    /// Handle config request - returns client configuration settings
+    /// </summary>
+    private static RconResponse HandleConfig(RconRequest request, Settings? settings)
+    {
+        var configData = new Dictionary<string, object>
+        {
+            { "MaxReconnectAttempts", settings?.MaxReconnectAttempts ?? 42 },
+            { "ReconnectDelayMs", settings?.ReconnectDelayMs ?? 15000 },
+            { "AutoRefreshPlayers", settings?.AutoRefreshPlayers ?? true }
+        };
+
+        return new RconResponse
+        {
+            Identifier = request.Identifier,
+            Status = "success",
+            Message = "Client configuration",
+            Data = configData
+        };
     }
 }

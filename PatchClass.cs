@@ -240,6 +240,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 if (__instance == null)
                     return;
 
+                ModManager.Log($"[RCON] Patch_LogOut.Prefix called for player: {__instance.Name}", ModManager.LogLevel.Info);
+
+                // Get count BEFORE the player is removed
+                int currentOnlineCount = GetOnlinePlayerCount();
+                int projectedCount = currentOnlineCount - 1; // Projected count after logout
+
                 // Broadcast player logoff event (use Prefix to capture before removal)
                 var playerData = new Dictionary<string, object>
                 {
@@ -247,13 +253,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                     { "playerGuid", __instance.Guid.Full },
                     { "level", __instance.Level ?? 0 },
                     { "location", __instance.Location?.ToString() ?? "Unknown" },
-                    { "count", GetOnlinePlayerCount() - 1 } // -1 because they're still counted as online
+                    { "count", projectedCount }
                 };
 
                 RconLogBroadcaster.Instance.BroadcastPlayerEvent("logoff", playerData);
 
-                if (PatchClass.Settings.EnableLogging)
-                    ModManager.Log($"[RCON] Player logoff detected: {__instance.Name}", ModManager.LogLevel.Info);
+                ModManager.Log($"[RCON] Player logoff detected: {__instance.Name} (current online: {currentOnlineCount}, projected: {projectedCount})", ModManager.LogLevel.Info);
             }
             catch (Exception ex)
             {
@@ -261,6 +266,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
         }
     }
+
 
     /// <summary>
     /// Helper method to get current online player count
@@ -357,4 +363,16 @@ public class Settings
     /// When enabled, player list will update automatically instead of requiring manual refresh
     /// </summary>
     public bool AutoRefreshPlayers { get; set; } = true;
+
+    /// <summary>
+    /// Maximum number of reconnection attempts for web client
+    /// Default: 42 (allows for ~10.5 minutes of reconnect attempts at 15 sec intervals)
+    /// </summary>
+    public int MaxReconnectAttempts { get; set; } = 42;
+
+    /// <summary>
+    /// Delay in milliseconds between reconnection attempts
+    /// Default: 15000 (15 seconds)
+    /// </summary>
+    public int ReconnectDelayMs { get; set; } = 15000;
 }
