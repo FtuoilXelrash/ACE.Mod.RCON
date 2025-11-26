@@ -251,6 +251,30 @@ function onDisconnected() {
     updateStatus('disconnected', 'Disconnected');
     addOutput('Disconnected from server.', 'info-message');
     disableCommands();
+
+    // Clear players list
+    const playersList = document.getElementById('players-list');
+    if (playersList) {
+        playersList.innerHTML = '<div class="info-message">Players will appear here after authentication</div>';
+    }
+
+    // Reset player count
+    const playerCountEl = document.getElementById('player-count');
+    if (playerCountEl) {
+        playerCountEl.textContent = '0';
+    }
+
+    // Reset server status
+    const serverStatusEl = document.getElementById('server-status');
+    if (serverStatusEl) {
+        serverStatusEl.textContent = 'Disconnected';
+    }
+
+    // Reset uptime
+    const uptimeEl = document.getElementById('uptime');
+    if (uptimeEl) {
+        uptimeEl.textContent = '0s';
+    }
 }
 
 /**
@@ -631,14 +655,8 @@ async function fetchClientConfig() {
                 console.log('[UI] Auto-refresh set from server config:', autoRefreshPlayers);
             }
 
-            // Display EnableLogging setting in Configuration tab
-            if (clientConfig.EnableLogging !== undefined) {
-                const enableLoggingSpan = document.getElementById('setting-enablelogging');
-                if (enableLoggingSpan) {
-                    enableLoggingSpan.textContent = clientConfig.EnableLogging ? 'Enabled' : 'Disabled';
-                    enableLoggingSpan.style.color = clientConfig.EnableLogging ? '#4caf50' : '#ff9800';
-                }
-            }
+            // Populate settings in Configuration tab
+            populateSettingsPanel(clientConfig);
         }
     } catch (error) {
         console.error('[UI] Error fetching client config:', error);
@@ -723,6 +741,80 @@ function resetColorsToDefault() {
     });
 
     console.log('[UI] Colors reset to default');
+}
+
+/**
+ * Populate settings panel with current values
+ */
+function populateSettingsPanel(config) {
+    if (!config) return;
+
+    // MaxConnections
+    if (config.MaxConnections !== undefined) {
+        document.getElementById('setting-max-connections-current').textContent = `Current: ${config.MaxConnections}`;
+    }
+
+    // ConnectionTimeoutSeconds
+    if (config.ConnectionTimeoutSeconds !== undefined) {
+        document.getElementById('setting-connection-timeout-current').textContent = `Current: ${config.ConnectionTimeoutSeconds}s`;
+    }
+
+    // EnableLogging
+    if (config.EnableLogging !== undefined) {
+        const checkbox = document.getElementById('setting-enable-logging');
+        checkbox.checked = config.EnableLogging;
+        document.getElementById('setting-enable-logging-current').textContent = config.EnableLogging ? 'Currently: ON' : 'Currently: OFF';
+        document.getElementById('setting-enable-logging-current').style.color = config.EnableLogging ? '#4caf50' : '#ff9800';
+    }
+
+    // DebugMode
+    if (config.DebugMode !== undefined) {
+        const checkbox = document.getElementById('setting-debug-mode');
+        checkbox.checked = config.DebugMode;
+        document.getElementById('setting-debug-mode-current').textContent = config.DebugMode ? 'Currently: ON' : 'Currently: OFF';
+        document.getElementById('setting-debug-mode-current').style.color = config.DebugMode ? '#4caf50' : '#ff9800';
+    }
+
+    // AutoRefreshPlayers
+    if (config.AutoRefreshPlayers !== undefined) {
+        const checkbox = document.getElementById('setting-auto-refresh');
+        checkbox.checked = config.AutoRefreshPlayers;
+        document.getElementById('setting-auto-refresh-current').textContent = config.AutoRefreshPlayers ? 'Currently: ON' : 'Currently: OFF';
+        document.getElementById('setting-auto-refresh-current').style.color = config.AutoRefreshPlayers ? '#4caf50' : '#ff9800';
+    }
+
+    // MaxReconnectAttempts
+    if (config.MaxReconnectAttempts !== undefined) {
+        document.getElementById('setting-max-reconnect-current').textContent = `Current: ${config.MaxReconnectAttempts}`;
+    }
+
+    // ReconnectDelayMs
+    if (config.ReconnectDelayMs !== undefined) {
+        document.getElementById('setting-reconnect-delay-current').textContent = `Current: ${config.ReconnectDelayMs}ms`;
+    }
+
+    console.log('[UI] Settings panel populated:', config);
+}
+
+/**
+ * Save settings (placeholder for future API integration)
+ */
+function saveSettings() {
+    const settings = {
+        MaxConnections: document.getElementById('setting-max-connections').value,
+        ConnectionTimeoutSeconds: document.getElementById('setting-connection-timeout').value,
+        EnableLogging: document.getElementById('setting-enable-logging').checked,
+        DebugMode: document.getElementById('setting-debug-mode').checked,
+        AutoRefreshPlayers: document.getElementById('setting-auto-refresh').checked,
+        MaxReconnectAttempts: document.getElementById('setting-max-reconnect').value,
+        ReconnectDelayMs: document.getElementById('setting-reconnect-delay').value
+    };
+
+    console.log('[UI] Settings to save:', settings);
+    addOutput('Settings saved! ⚠️ Server restart required to apply changes.', 'success-message');
+
+    // TODO: Send settings to server API endpoint (when implemented)
+    // This would require a new server endpoint to update settings.json
 }
 
 console.log('[ui.js] UI module loaded');

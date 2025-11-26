@@ -399,10 +399,13 @@ Auth: {""Command"": ""auth"", ""Password"": ""your_password"", ""Identifier"": 1
     {
         var configData = new Dictionary<string, object>
         {
-            { "MaxReconnectAttempts", settings?.MaxReconnectAttempts ?? 42 },
-            { "ReconnectDelayMs", settings?.ReconnectDelayMs ?? 15000 },
+            { "MaxConnections", settings?.MaxConnections ?? 10 },
+            { "ConnectionTimeoutSeconds", settings?.ConnectionTimeoutSeconds ?? 300 },
+            { "EnableLogging", settings?.EnableLogging ?? false },
+            { "DebugMode", settings?.DebugMode ?? false },
             { "AutoRefreshPlayers", settings?.AutoRefreshPlayers ?? true },
-            { "EnableLogging", settings?.EnableLogging ?? false }
+            { "MaxReconnectAttempts", settings?.MaxReconnectAttempts ?? 42 },
+            { "ReconnectDelayMs", settings?.ReconnectDelayMs ?? 15000 }
         };
 
         return new RconResponse

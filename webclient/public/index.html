@@ -99,25 +99,58 @@
                                 <button onclick="resetColorsToDefault()" class="reset-btn">Reset to Default Colors</button>
 
                                 <h2 style="margin-top: 30px;">Server Settings</h2>
+                                <p style="color: #888; font-size: 12px; margin-bottom: 15px;">⚠️ Changes to these settings require a server restart to take effect.</p>
                                 <div class="settings-info">
+                                    <!-- MaxConnections -->
                                     <div class="setting-item">
-                                        <h3>EnableLogging</h3>
-                                        <p><strong>Current Value:</strong> <span id="setting-enablelogging">Loading...</span></p>
-                                        <p><strong>Description:</strong></p>
-                                        <div class="setting-description">
-                                            <p>When <strong>enabled</strong>, the RCON server logs detailed information about all operations including:</p>
-                                            <ul>
-                                                <li>Every WebSocket connection and disconnection</li>
-                                                <li>WebSocket authentication attempts (success/failure)</li>
-                                                <li>Every command received and response sent</li>
-                                                <li>Player login/logoff detection events</li>
-                                                <li>Log broadcaster initialization and message broadcasts</li>
-                                                <li>Detailed network communication details</li>
-                                            </ul>
-                                            <p>When <strong>disabled</strong>, only critical errors and startup messages are logged.</p>
-                                            <p><strong>Use Case:</strong> Enable this during development, troubleshooting, or when you need to debug connection issues. Disable it in production to reduce log file size and server overhead.</p>
-                                        </div>
+                                        <label for="setting-max-connections">Max Connections:</label>
+                                        <input type="number" id="setting-max-connections" class="setting-input" min="1" max="100" placeholder="10">
+                                        <span class="setting-current" id="setting-max-connections-current"></span>
                                     </div>
+
+                                    <!-- ConnectionTimeoutSeconds -->
+                                    <div class="setting-item">
+                                        <label for="setting-connection-timeout">Connection Timeout (seconds):</label>
+                                        <input type="number" id="setting-connection-timeout" class="setting-input" min="10" max="3600" placeholder="300">
+                                        <span class="setting-current" id="setting-connection-timeout-current"></span>
+                                    </div>
+
+                                    <!-- EnableLogging -->
+                                    <div class="setting-item">
+                                        <label for="setting-enable-logging">Enable Logging:</label>
+                                        <input type="checkbox" id="setting-enable-logging" class="setting-checkbox">
+                                        <span class="setting-current" id="setting-enable-logging-current"></span>
+                                    </div>
+
+                                    <!-- DebugMode -->
+                                    <div class="setting-item">
+                                        <label for="setting-debug-mode">Debug Mode:</label>
+                                        <input type="checkbox" id="setting-debug-mode" class="setting-checkbox">
+                                        <span class="setting-current" id="setting-debug-mode-current"></span>
+                                    </div>
+
+                                    <!-- AutoRefreshPlayers -->
+                                    <div class="setting-item">
+                                        <label for="setting-auto-refresh">Auto Refresh Players:</label>
+                                        <input type="checkbox" id="setting-auto-refresh" class="setting-checkbox">
+                                        <span class="setting-current" id="setting-auto-refresh-current"></span>
+                                    </div>
+
+                                    <!-- MaxReconnectAttempts -->
+                                    <div class="setting-item">
+                                        <label for="setting-max-reconnect">Max Reconnect Attempts:</label>
+                                        <input type="number" id="setting-max-reconnect" class="setting-input" min="1" max="1000" placeholder="42">
+                                        <span class="setting-current" id="setting-max-reconnect-current"></span>
+                                    </div>
+
+                                    <!-- ReconnectDelayMs -->
+                                    <div class="setting-item">
+                                        <label for="setting-reconnect-delay">Reconnect Delay (ms):</label>
+                                        <input type="number" id="setting-reconnect-delay" class="setting-input" min="100" max="60000" placeholder="15000">
+                                        <span class="setting-current" id="setting-reconnect-delay-current"></span>
+                                    </div>
+
+                                    <button onclick="saveSettings()" class="save-settings-btn">Save Settings</button>
                                 </div>
                             </div>
                         </section>

@@ -663,6 +663,75 @@ main > *:not(.tab-nav):not(.sidebar) {
     line-height: 1.5;
 }
 
+/* Settings Form Styles */
+.setting-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #1a1a1a;
+    border-radius: 4px;
+}
+
+.setting-item label {
+    min-width: 200px;
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+.setting-input {
+    padding: 8px 12px;
+    background-color: #0f0f0f;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: var(--text-color);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    min-width: 100px;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px rgba(255, 107, 0, 0.3);
+}
+
+.setting-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.setting-current {
+    color: #888;
+    font-size: 12px;
+    min-width: 80px;
+    text-align: right;
+}
+
+.save-settings-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 15px;
+    transition: background-color 0.2s;
+}
+
+.save-settings-btn:hover {
+    background-color: #ff8c00;
+}
+
+.save-settings-btn:active {
+    background-color: #e55a00;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     main {
