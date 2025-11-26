@@ -26,11 +26,10 @@ public static class RconWebSocketHandler
                 {
                     try
                     {
-                        // Read message from WebSocket with timeout
-                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                        // Read message from WebSocket - no timeout to allow idle connections
                         var result = await webSocket.ReceiveAsync(
                             new ArraySegment<byte>(buffer),
-                            cts.Token);
+                            CancellationToken.None);
 
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
@@ -68,7 +67,7 @@ public static class RconWebSocketHandler
                         }
 
                         // Handle command
-                        var response = await RconProtocol.HandleCommandAsync(request, wsConnection);
+                        var response = await RconProtocol.HandleCommandAsync(request, wsConnection, settings);
 
                         // Log response data if present
                         if (response.Data != null)
@@ -78,11 +77,6 @@ public static class RconWebSocketHandler
 
                         // Send response back through WebSocket
                         await SendResponseAsync(webSocket, response);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Timeout waiting for message - normal during idle
-                        break;
                     }
                     catch (WebSocketException wex)
                     {

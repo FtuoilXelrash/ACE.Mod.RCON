@@ -33,9 +33,21 @@ public static class RconProtocol
     }
 
     /// <summary>
+    /// Set Debug flag on response based on settings
+    /// </summary>
+    private static RconResponse SetDebugFlag(RconResponse response, Settings? settings)
+    {
+        if (settings != null)
+        {
+            response.Debug = settings.DebugMode;
+        }
+        return response;
+    }
+
+    /// <summary>
     /// Handle incoming RCON command
     /// </summary>
-    public static async Task<RconResponse> HandleCommandAsync(RconRequest request, RconConnection connection)
+    public static async Task<RconResponse> HandleCommandAsync(RconRequest request, RconConnection connection, Settings? settings = null)
     {
         ModManager.Log($"[RCON] Command: {request.Command}, IsAuthenticated: {connection.IsAuthenticated}");
 
@@ -44,22 +56,23 @@ public static class RconProtocol
         {
             if (request.Command != "auth")
             {
-                return new RconResponse
+                var errorResponse = new RconResponse
                 {
                     Identifier = request.Identifier,
                     Status = "error",
                     Message = "Authentication required. Send 'auth' command with password first."
                 };
+                return SetDebugFlag(errorResponse, settings);
             }
 
             // Handle authentication
-            var response = await HandleAuthAsync(request, connection);
+            var authResponse = await HandleAuthAsync(request, connection);
             ModManager.Log($"[RCON] After auth attempt - IsAuthenticated: {connection.IsAuthenticated}");
-            return response;
+            return SetDebugFlag(authResponse, settings);
         }
 
         // Handle authenticated commands
-        return request.Command switch
+        var response = request.Command switch
         {
             "status" => HandleStatus(request),
             "players" => HandlePlayers(request),
@@ -72,6 +85,8 @@ public static class RconProtocol
                 Message = $"Unknown command: {request.Command}. Type 'help' for available commands."
             }
         };
+
+        return SetDebugFlag(response, settings);
     }
 
     /// <summary>
@@ -105,11 +120,15 @@ public static class RconProtocol
         // Mark connection as authenticated
         connection.IsAuthenticated = true;
 
+        // Auto-fetch server status to populate sidebar
+        var statusData = GetServerStatus();
+
         return new RconResponse
         {
             Identifier = request.Identifier,
             Status = "authenticated",
-            Message = "Authentication successful"
+            Message = "Authentication successful",
+            Data = statusData
         };
     }
 
@@ -352,9 +371,12 @@ Auth: {""Command"": ""auth"", ""Password"": ""your_password"", ""Identifier"": 1
     {
         try
         {
-            // Get process uptime
+            // Get process uptime - StartTime is local, convert to UTC
             var process = System.Diagnostics.Process.GetCurrentProcess();
-            var uptime = DateTime.UtcNow - process.StartTime;
+            var startTimeUtc = process.StartTime.Kind == DateTimeKind.Local
+                ? process.StartTime.ToUniversalTime()
+                : process.StartTime;
+            var uptime = DateTime.UtcNow - startTimeUtc;
 
             var days = uptime.Days;
             var hours = uptime.Hours;

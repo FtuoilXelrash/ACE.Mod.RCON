@@ -35,11 +35,19 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         }
     }
 
+    /// <summary>
+    /// Static reference to the instance so static command handlers can access SettingsContainer
+    /// </summary>
+    private static PatchClass? Instance = null;
+
     public override Task OnStartSuccess()
     {
         try
         {
             Settings = SettingsContainer?.Settings ?? new Settings();
+
+            // Store instance reference for static command handler
+            Instance = this;
 
             // Initialize authenticator with settings
             RconAuthenticator.Initialize(Settings);
@@ -101,6 +109,60 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         }
 
         base.Stop();
+    }
+
+    /// <summary>
+    /// Reload RCON settings from Settings.json
+    /// Server console command: rcon reload
+    /// </summary>
+    public static void ReloadRconSettings()
+    {
+        try
+        {
+            if (Instance?.SettingsContainer == null)
+            {
+                ModManager.Log($"[RCON] ERROR: Settings container not available", ModManager.LogLevel.Error);
+                return;
+            }
+
+            ModManager.Log($"[RCON] Reloading settings from Settings.json...");
+
+            // Reload settings from file using reflection
+            var reloadMethod = Instance.SettingsContainer.GetType().GetMethod("LoadSettings",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (reloadMethod != null)
+            {
+                reloadMethod.Invoke(Instance.SettingsContainer, new object[] { });
+                var newSettings = Instance.SettingsContainer.Settings;
+
+                if (newSettings != null)
+                {
+                    // Update our static Settings reference
+                    PatchClass.Settings = newSettings;
+
+                    // Re-initialize authenticator with new settings
+                    RconAuthenticator.Initialize(PatchClass.Settings);
+
+                    ModManager.Log($"[RCON] Settings reloaded successfully!");
+                    ModManager.Log($"[RCON] DebugMode: {PatchClass.Settings.DebugMode}");
+                    ModManager.Log($"[RCON] EnableLogging: {PatchClass.Settings.EnableLogging}");
+                    ModManager.Log($"[RCON] RconEnabled: {PatchClass.Settings.RconEnabled}");
+                }
+                else
+                {
+                    ModManager.Log($"[RCON] ERROR: Failed to load new settings", ModManager.LogLevel.Error);
+                }
+            }
+            else
+            {
+                ModManager.Log($"[RCON] ERROR: LoadSettings method not found", ModManager.LogLevel.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[RCON] ERROR reloading settings: {ex.Message}", ModManager.LogLevel.Error);
+        }
     }
 }
 

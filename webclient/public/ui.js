@@ -135,13 +135,16 @@ function onResponse(response) {
             addOutput(displayText, 'response-message');
         }
 
-        // Always show full JSON response for visibility
-        try {
-            const formatted = JSON.stringify(response, null, 2);
-            addOutput('---\nRaw Response:\n' + formatted, 'debug-message');
-        } catch (e) {
-            // Fallback if JSON serialization fails
-            addOutput('---\nRaw Response: ' + JSON.stringify(response), 'debug-message');
+        // Show full JSON response only in debug mode
+        // Check if response indicates debug mode is enabled
+        if (response.Debug === true) {
+            try {
+                const formatted = JSON.stringify(response, null, 2);
+                addOutput('---\nRaw Response:\n' + formatted, 'debug-message');
+            } catch (e) {
+                // Fallback if JSON serialization fails
+                addOutput('---\nRaw Response: ' + JSON.stringify(response), 'debug-message');
+            }
         }
     }
 }

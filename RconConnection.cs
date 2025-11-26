@@ -256,4 +256,5 @@ public class RconResponse
     public string? Message { get; set; }
     public Dictionary<string, object>? Data { get; set; }
     public string? Error { get; set; }
+    public bool Debug { get; set; } = false;
 }
