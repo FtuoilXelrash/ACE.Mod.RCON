@@ -227,42 +227,74 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     /// <summary>
     /// Harmony patch to detect player logoff
-    /// Patches Player.LogOut() in ACE.Server.WorldObjects
-    /// We capture this early to get player data before they're removed
+    /// Patches PlayerManager.SwitchPlayerFromOnlineToOffline()
+    /// This fires when player is actually removed from online list
     /// </summary>
-    [HarmonyPatch(typeof(Player), nameof(Player.LogOut))]
-    public static class Patch_LogOut
+    [HarmonyPatch]
+    public static class Patch_PlayerLogoff
     {
-        public static void Prefix(Player __instance)
+        // Target the SwitchPlayerFromOnlineToOffline method in PlayerManager
+        static bool TryGetMethod(out System.Reflection.MethodBase? method)
+        {
+            method = null;
+            try
+            {
+                var playerManagerType = Type.GetType("ACE.Server.Managers.PlayerManager, ACE.Server");
+                if (playerManagerType != null)
+                {
+                    method = playerManagerType.GetMethod("SwitchPlayerFromOnlineToOffline",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                        null,
+                        new[] { typeof(Player) },
+                        null);
+                    return method != null;
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[RCON] ERROR finding SwitchPlayerFromOnlineToOffline method: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+            return false;
+        }
+
+        static System.Collections.Generic.IEnumerable<System.Reflection.MethodBase> TargetMethods()
+        {
+            if (TryGetMethod(out var method) && method != null)
+            {
+                yield return method;
+            }
+        }
+
+        public static void Prefix(Player player)
         {
             try
             {
-                if (__instance == null)
+                if (player == null)
                     return;
 
-                ModManager.Log($"[RCON] Patch_LogOut.Prefix called for player: {__instance.Name}", ModManager.LogLevel.Info);
+                ModManager.Log($"[RCON] Patch_PlayerLogoff: Player being removed from online list: {player.Name}", ModManager.LogLevel.Info);
 
-                // Get count BEFORE the player is removed
+                // Get count RIGHT BEFORE removal
                 int currentOnlineCount = GetOnlinePlayerCount();
-                int projectedCount = currentOnlineCount - 1; // Projected count after logout
+                int projectedCount = currentOnlineCount - 1; // Will be removed next
 
-                // Broadcast player logoff event (use Prefix to capture before removal)
+                // Broadcast player logoff event with ACTUAL count after removal
                 var playerData = new Dictionary<string, object>
                 {
-                    { "playerName", __instance.Name ?? "Unknown" },
-                    { "playerGuid", __instance.Guid.Full },
-                    { "level", __instance.Level ?? 0 },
-                    { "location", __instance.Location?.ToString() ?? "Unknown" },
+                    { "playerName", player.Name ?? "Unknown" },
+                    { "playerGuid", player.Guid.Full },
+                    { "level", player.Level ?? 0 },
+                    { "location", player.Location?.ToString() ?? "Unknown" },
                     { "count", projectedCount }
                 };
 
                 RconLogBroadcaster.Instance.BroadcastPlayerEvent("logoff", playerData);
 
-                ModManager.Log($"[RCON] Player logoff detected: {__instance.Name} (current online: {currentOnlineCount}, projected: {projectedCount})", ModManager.LogLevel.Info);
+                ModManager.Log($"[RCON] Player logoff event broadcast: {player.Name} (count will be: {projectedCount})", ModManager.LogLevel.Info);
             }
             catch (Exception ex)
             {
-                ModManager.Log($"[RCON] ERROR in Patch_LogOut: {ex.Message}", ModManager.LogLevel.Error);
+                ModManager.Log($"[RCON] ERROR in Patch_PlayerLogoff: {ex.Message}", ModManager.LogLevel.Error);
             }
         }
     }
