@@ -28,7 +28,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
             if (saveMethod != null)
             {
-                await (Task<bool>)saveMethod.Invoke(SettingsContainer, new object[] { SettingsContainer.Settings });
+#pragma warning disable CS8600, CS8602
+                await (Task<bool>)saveMethod.Invoke(SettingsContainer, new object[] { SettingsContainer.Settings })!;
+#pragma warning restore CS8600, CS8602
             }
         }
     }
