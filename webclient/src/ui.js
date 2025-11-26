@@ -128,6 +128,11 @@ function onResponse(response) {
     // Update sidebar with data if available
     if (response.Data) {
         updateSidebarPanel(response);
+
+        // Display players in Players tab if this is a players response
+        if (response.Data.players && response.Data.count !== undefined) {
+            displayPlayers(response.Data);
+        }
     }
 
     // Display response
@@ -393,6 +398,103 @@ function disableCommands() {
     quickButtons.forEach(btn => {
         btn.disabled = true;
     });
+}
+
+/**
+ * Switch between tabs
+ */
+function switchTab(tabId) {
+    // Hide all tabs
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(tab => tab.classList.remove('active'));
+
+    // Remove active class from all buttons
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+
+    // Show selected tab
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+
+    // Mark button as active
+    event.target.classList.add('active');
+}
+
+/**
+ * Refresh players list
+ */
+async function refreshPlayers() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    const refreshBtn = document.getElementById('refresh-players-btn');
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = 'Loading...';
+
+    try {
+        const response = await client.send('players', []);
+        // Response will be handled by onResponse()
+    } catch (error) {
+        addOutput(`Failed to refresh players: ${error.message}`, 'error-message');
+    } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Refresh Players';
+    }
+}
+
+/**
+ * Display players in the Players tab
+ */
+function displayPlayers(playersData) {
+    const playersList = document.getElementById('players-list');
+
+    if (!playersData || !playersData.players || playersData.players.length === 0) {
+        playersList.innerHTML = '<div class="info-message">No players online</div>';
+        return;
+    }
+
+    let html = '';
+    playersData.players.forEach((player, index) => {
+        html += `
+            <div class="player-item" onclick="togglePlayerSelect(this, '${player.Name}')">
+                <input type="checkbox" class="player-checkbox" onclick="event.stopPropagation()">
+                <div class="player-info">
+                    <span class="player-name">${player.Name}</span>
+                    <span class="player-level">Level: ${player.Level}</span>
+                    <span class="player-location">${player.Location}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    playersList.innerHTML = html;
+}
+
+/**
+ * Toggle player selection
+ */
+function togglePlayerSelect(element, playerName) {
+    element.classList.toggle('selected');
+    const checkbox = element.querySelector('.player-checkbox');
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+    }
+}
+
+/**
+ * Get selected players
+ */
+function getSelectedPlayers() {
+    const selected = [];
+    document.querySelectorAll('.player-item.selected').forEach(item => {
+        const name = item.querySelector('.player-name').textContent;
+        selected.push(name);
+    });
+    return selected;
 }
 
 console.log('[ui.js] UI module loaded');

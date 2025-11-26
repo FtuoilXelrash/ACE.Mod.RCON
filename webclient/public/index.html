@@ -19,21 +19,43 @@
         </header>
 
         <main>
-            <section id="console" class="console">
-                <div id="output" class="output">
-                    <div class="info-message">
-                        Welcome to ACE RCON Web Client<br>
-                        Connecting to server...
+            <div style="display: flex; flex: 1; gap: 20px; overflow: hidden;">
+                <!-- Tabs Area -->
+                <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                    <!-- Tab Navigation -->
+                    <div class="tab-nav">
+                        <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
+                        <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
                     </div>
+
+                    <!-- Console Tab -->
+                    <section id="console-tab" class="tab-content active">
+                        <div id="output" class="output">
+                            <div class="info-message">
+                                Welcome to ACE RCON Web Client<br>
+                                Connecting to server...
+                            </div>
+                        </div>
+
+                        <div class="input-area">
+                            <input type="text" id="command-input" placeholder="Enter RCON command..." disabled>
+                            <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
+                        </div>
+                    </section>
+
+                    <!-- Players Tab -->
+                    <section id="players-tab" class="tab-content">
+                        <div class="players-toolbar">
+                            <button id="refresh-players-btn" onclick="refreshPlayers()" disabled>Refresh Players</button>
+                        </div>
+                        <div id="players-list" class="players-list">
+                            <div class="info-message">Players will appear here after authentication</div>
+                        </div>
+                    </section>
                 </div>
 
-                <div class="input-area">
-                    <input type="text" id="command-input" placeholder="Enter RCON command..." disabled>
-                    <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
-                </div>
-            </section>
-
-            <aside id="sidebar" class="sidebar">
+                <!-- Sidebar -->
+                <aside id="sidebar" class="sidebar">
                 <section class="server-info">
                     <h3>Server Info</h3>
                     <div id="server-stats">
@@ -50,7 +72,8 @@
                     <button onclick="quickCommand('landblocks')" disabled>Landblocks</button>
                     <button onclick="quickCommand('help')" disabled>Help</button>
                 </section>
-            </aside>
+                </aside>
+            </div>
         </main>
 
         <footer>
