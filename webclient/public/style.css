@@ -149,6 +149,39 @@ main {
     text-align: center;
 }
 
+.command-message {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.response-message {
+    color: #4caf50;
+    padding: 5px 0;
+}
+
+.error-message {
+    color: var(--error-color);
+    padding: 5px 0;
+    font-weight: bold;
+}
+
+.success-message {
+    color: var(--success-color);
+    padding: 5px 0;
+}
+
+.debug-message {
+    color: #888;
+    font-size: 12px;
+    padding: 8px;
+    margin-top: 5px;
+    border-left: 2px solid #444;
+    padding-left: 12px;
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* Input Area */
 .input-area {
     display: flex;

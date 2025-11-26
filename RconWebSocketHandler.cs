@@ -26,10 +26,11 @@ public static class RconWebSocketHandler
                 {
                     try
                     {
-                        // Read message from WebSocket
+                        // Read message from WebSocket with timeout
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                         var result = await webSocket.ReceiveAsync(
                             new ArraySegment<byte>(buffer),
-                            CancellationToken.None);
+                            cts.Token);
 
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
@@ -69,29 +70,39 @@ public static class RconWebSocketHandler
                         // Handle command
                         var response = await RconProtocol.HandleCommandAsync(request, wsConnection);
 
+                        // Log response data if present
+                        if (response.Data != null)
+                        {
+                            ModManager.Log($"[RCON] Response has Data object with {response.Data.Count} fields", ModManager.LogLevel.Info);
+                        }
+
                         // Send response back through WebSocket
                         await SendResponseAsync(webSocket, response);
                     }
                     catch (OperationCanceledException)
                     {
+                        // Timeout waiting for message - normal during idle
+                        break;
+                    }
+                    catch (WebSocketException wex)
+                    {
+                        // WebSocket was closed or connection lost
+                        if (wex.Message.Contains("closed") || wex.Message.Contains("Aborted") || wex.Message.Contains("invalid state"))
+                        {
+                            // Normal shutdown, don't log as error
+                            break;
+                        }
+                        ModManager.Log($"[RCON] WebSocket error: {wex.Message}", ModManager.LogLevel.Error);
                         break;
                     }
                     catch (Exception ex)
                     {
-                        ModManager.Log($"[RCON] ERROR in WebSocket handler: {ex.Message}", ModManager.LogLevel.Error);
-
-                        var errorResponse = new RconResponse
+                        // Don't log errors during shutdown
+                        if (!ex.Message.Contains("Aborted") && !ex.Message.Contains("invalid state") && !ex.Message.Contains("closed"))
                         {
-                            Identifier = -1,
-                            Status = "error",
-                            Message = "Server error"
-                        };
-
-                        try
-                        {
-                            await SendResponseAsync(webSocket, errorResponse);
+                            ModManager.Log($"[RCON] ERROR in WebSocket handler: {ex.Message}", ModManager.LogLevel.Error);
                         }
-                        catch { }
+                        break;
                     }
                 }
             }
@@ -164,10 +175,4 @@ public class WebSocketRconConnection : RconConnection
     }
 
     private static int connectionIdCounter = 1000;
-
-    public void SendMessage(RconResponse response)
-    {
-        // WebSocket responses are handled by the handler
-        // This is for broadcast messages (Phase 2+)
-    }
 }

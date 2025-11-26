@@ -129,24 +129,19 @@ function onResponse(response) {
     if (response.Status === 'error') {
         addOutput(`Error: ${response.Message}`, 'error-message');
     } else {
-        // Handle special message formatting
-        let displayText = '';
-
+        // Always show message text first
         if (response.Message) {
-            // Convert escape sequences to actual newlines for display
-            displayText = response.Message.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+            let displayText = response.Message.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+            addOutput(displayText, 'response-message');
         }
 
-        if (displayText) {
-            addOutput(displayText, 'response-message');
-        } else {
-            // Try to pretty-print JSON response
-            try {
-                const formatted = JSON.stringify(response, null, 2);
-                addOutput(formatted, 'response-message');
-            } catch (e) {
-                addOutput(JSON.stringify(response), 'response-message');
-            }
+        // Always show full JSON response for visibility
+        try {
+            const formatted = JSON.stringify(response, null, 2);
+            addOutput('---\nRaw Response:\n' + formatted, 'debug-message');
+        } catch (e) {
+            // Fallback if JSON serialization fails
+            addOutput('---\nRaw Response: ' + JSON.stringify(response), 'debug-message');
         }
     }
 }

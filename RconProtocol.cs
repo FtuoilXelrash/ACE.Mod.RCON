@@ -121,6 +121,8 @@ public static class RconProtocol
         try
         {
             var statusData = GetServerStatus();
+            ModManager.Log($"[RCON] Status data: Players={statusData["CurrentPlayers"]}, Uptime={statusData["Uptime"]}, Status={statusData["Status"]}", ModManager.LogLevel.Info);
+
             return new RconResponse
             {
                 Identifier = request.Identifier,
@@ -131,6 +133,7 @@ public static class RconProtocol
         }
         catch (Exception ex)
         {
+            ModManager.Log($"[RCON] Status error: {ex.Message}", ModManager.LogLevel.Error);
             return new RconResponse
             {
                 Identifier = request.Identifier,
@@ -148,6 +151,8 @@ public static class RconProtocol
         try
         {
             var players = GetOnlinePlayersList();
+            ModManager.Log($"[RCON] Players data: count={players.Count}", ModManager.LogLevel.Info);
+
             return new RconResponse
             {
                 Identifier = request.Identifier,
@@ -162,6 +167,7 @@ public static class RconProtocol
         }
         catch (Exception ex)
         {
+            ModManager.Log($"[RCON] Players error: {ex.Message}", ModManager.LogLevel.Error);
             return new RconResponse
             {
                 Identifier = request.Identifier,
@@ -179,6 +185,8 @@ public static class RconProtocol
         try
         {
             var landblocks = GetLandblockInfo();
+            ModManager.Log($"[RCON] Landblocks data: count={landblocks.Count}", ModManager.LogLevel.Info);
+
             return new RconResponse
             {
                 Identifier = request.Identifier,
@@ -193,6 +201,7 @@ public static class RconProtocol
         }
         catch (Exception ex)
         {
+            ModManager.Log($"[RCON] Landblocks error: {ex.Message}", ModManager.LogLevel.Error);
             return new RconResponse
             {
                 Identifier = request.Identifier,

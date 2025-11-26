@@ -7,6 +7,32 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     private static RconServer? rconServer;
     private static RconHttpServer? httpServer;
 
+    /// <summary>
+    /// Override to ensure Settings.json is updated with any missing fields
+    /// This handles upgrades from older versions of the mod
+    /// </summary>
+    public override async void Init()
+    {
+        base.Init();
+
+        // After loading/creating settings, save them back to add any missing fields
+        // This ensures old Settings.json files get updated with new default settings
+        if (SettingsContainer?.Settings != null)
+        {
+            // Give the file a moment to settle after initial creation
+            await Task.Delay(100);
+
+            // Use reflection to call the protected SaveSettingsAsync method
+            var saveMethod = SettingsContainer.GetType().GetMethod("SaveSettingsAsync",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (saveMethod != null)
+            {
+                await (Task<bool>)saveMethod.Invoke(SettingsContainer, new object[] { SettingsContainer.Settings });
+            }
+        }
+    }
+
     public override Task OnStartSuccess()
     {
         try
@@ -116,4 +142,10 @@ public class Settings
     /// Enable verbose logging of RCON operations
     /// </summary>
     public bool EnableLogging { get; set; } = false;
+
+    /// <summary>
+    /// Enable debug mode - shows full JSON responses in web client
+    /// Set to true to see Data objects and detailed response info
+    /// </summary>
+    public bool DebugMode { get; set; } = false;
 }
