@@ -401,7 +401,8 @@ Auth: {""Command"": ""auth"", ""Password"": ""your_password"", ""Identifier"": 1
         {
             { "MaxReconnectAttempts", settings?.MaxReconnectAttempts ?? 42 },
             { "ReconnectDelayMs", settings?.ReconnectDelayMs ?? 15000 },
-            { "AutoRefreshPlayers", settings?.AutoRefreshPlayers ?? true }
+            { "AutoRefreshPlayers", settings?.AutoRefreshPlayers ?? true },
+            { "EnableLogging", settings?.EnableLogging ?? false }
         };
 
         return new RconResponse

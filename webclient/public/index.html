@@ -28,6 +28,7 @@
                         <div class="tab-nav">
                             <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
                             <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
+                            <button class="tab-button" onclick="switchTab('config-tab')">Configuration</button>
                         </div>
 
                         <!-- Console Tab -->
@@ -51,6 +52,73 @@
                             </div>
                             <div id="players-list" class="players-list">
                                 <div class="info-message">Players will appear here after authentication</div>
+                            </div>
+                        </section>
+
+                        <!-- Configuration Tab -->
+                        <section id="config-tab" class="tab-content">
+                            <div class="config-content">
+                                <h2>Console Message Colors</h2>
+                                <div class="color-config-section">
+                                    <div class="color-config-row">
+                                        <label for="color-chat">CHAT Messages:</label>
+                                        <input type="color" id="color-chat" class="color-picker" value="#00ff00" onchange="updateLogColor('chat', this.value)">
+                                        <span id="color-chat-label">#00ff00</span>
+                                    </div>
+                                    <div class="color-config-row">
+                                        <label for="color-audit">AUDIT Messages:</label>
+                                        <input type="color" id="color-audit" class="color-picker" value="#ffff00" onchange="updateLogColor('audit', this.value)">
+                                        <span id="color-audit-label">#ffff00</span>
+                                    </div>
+                                    <div class="color-config-row">
+                                        <label for="color-system">SYSTEM Messages:</label>
+                                        <input type="color" id="color-system" class="color-picker" value="#ff00ff" onchange="updateLogColor('system', this.value)">
+                                        <span id="color-system-label">#ff00ff</span>
+                                    </div>
+                                    <div class="color-config-row">
+                                        <label for="color-info">INFO Messages:</label>
+                                        <input type="color" id="color-info" class="color-picker" value="#2196f3" onchange="updateLogColor('info', this.value)">
+                                        <span id="color-info-label">#2196f3</span>
+                                    </div>
+                                    <div class="color-config-row">
+                                        <label for="color-warn">WARNING Messages:</label>
+                                        <input type="color" id="color-warn" class="color-picker" value="#ff9800" onchange="updateLogColor('warn', this.value)">
+                                        <span id="color-warn-label">#ff9800</span>
+                                    </div>
+                                    <div class="color-config-row">
+                                        <label for="color-error">ERROR Messages:</label>
+                                        <input type="color" id="color-error" class="color-picker" value="#f44336" onchange="updateLogColor('error', this.value)">
+                                        <span id="color-error-label">#f44336</span>
+                                    </div>
+                                    <div class="color-config-row">
+                                        <label for="color-debug">DEBUG Messages:</label>
+                                        <input type="color" id="color-debug" class="color-picker" value="#888888" onchange="updateLogColor('debug', this.value)">
+                                        <span id="color-debug-label">#888888</span>
+                                    </div>
+                                </div>
+                                <button onclick="resetColorsToDefault()" class="reset-btn">Reset to Default Colors</button>
+
+                                <h2 style="margin-top: 30px;">Server Settings</h2>
+                                <div class="settings-info">
+                                    <div class="setting-item">
+                                        <h3>EnableLogging</h3>
+                                        <p><strong>Current Value:</strong> <span id="setting-enablelogging">Loading...</span></p>
+                                        <p><strong>Description:</strong></p>
+                                        <div class="setting-description">
+                                            <p>When <strong>enabled</strong>, the RCON server logs detailed information about all operations including:</p>
+                                            <ul>
+                                                <li>Every WebSocket connection and disconnection</li>
+                                                <li>WebSocket authentication attempts (success/failure)</li>
+                                                <li>Every command received and response sent</li>
+                                                <li>Player login/logoff detection events</li>
+                                                <li>Log broadcaster initialization and message broadcasts</li>
+                                                <li>Detailed network communication details</li>
+                                            </ul>
+                                            <p>When <strong>disabled</strong>, only critical errors and startup messages are logged.</p>
+                                            <p><strong>Use Case:</strong> Enable this during development, troubleshooting, or when you need to debug connection issues. Disable it in production to reduce log file size and server overhead.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </section>
                     </div>

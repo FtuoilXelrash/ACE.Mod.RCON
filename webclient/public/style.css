@@ -533,6 +533,136 @@ main > *:not(.tab-nav):not(.sidebar) {
     min-height: 0;
 }
 
+/* Configuration Tab Styles */
+.config-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.config-content h2 {
+    color: var(--accent-color);
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.color-config-section {
+    background-color: var(--secondary-color);
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.color-config-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 12px;
+    padding: 8px;
+    background-color: #1a1a1a;
+    border-radius: 4px;
+}
+
+.color-config-row:last-child {
+    margin-bottom: 0;
+}
+
+.color-config-row label {
+    min-width: 150px;
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+.color-picker {
+    width: 50px;
+    height: 35px;
+    border: 2px solid #444;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.color-picker:hover {
+    border-color: var(--accent-color);
+}
+
+.color-config-row span {
+    color: #888;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    min-width: 80px;
+}
+
+.reset-btn {
+    padding: 10px 20px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.reset-btn:hover {
+    background-color: #ff8c00;
+}
+
+.reset-btn:active {
+    background-color: #e55a00;
+}
+
+.settings-info {
+    background-color: var(--secondary-color);
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.setting-item {
+    margin-bottom: 20px;
+}
+
+.setting-item h3 {
+    color: var(--accent-color);
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.setting-item p {
+    color: var(--text-color);
+    margin: 5px 0;
+    line-height: 1.6;
+}
+
+.setting-description {
+    background-color: #1a1a1a;
+    border-left: 3px solid var(--accent-color);
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.setting-description p {
+    margin: 10px 0;
+    color: #ccc;
+}
+
+.setting-description ul {
+    margin: 10px 0;
+    padding-left: 25px;
+    color: #ccc;
+}
+
+.setting-description li {
+    margin: 5px 0;
+    line-height: 1.5;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     main {

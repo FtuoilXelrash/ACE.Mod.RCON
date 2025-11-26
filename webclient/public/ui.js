@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Initialize color style element and restore saved colors
+    createStyleElement();
+
     // Auto-connect on load
     setTimeout(() => {
         console.log('[UI] Auto-connecting to RCON server...');
@@ -627,10 +630,99 @@ async function fetchClientConfig() {
                 }
                 console.log('[UI] Auto-refresh set from server config:', autoRefreshPlayers);
             }
+
+            // Display EnableLogging setting in Configuration tab
+            if (clientConfig.EnableLogging !== undefined) {
+                const enableLoggingSpan = document.getElementById('setting-enablelogging');
+                if (enableLoggingSpan) {
+                    enableLoggingSpan.textContent = clientConfig.EnableLogging ? 'Enabled' : 'Disabled';
+                    enableLoggingSpan.style.color = clientConfig.EnableLogging ? '#4caf50' : '#ff9800';
+                }
+            }
         }
     } catch (error) {
         console.error('[UI] Error fetching client config:', error);
     }
+}
+
+/**
+ * Update log message color
+ */
+function updateLogColor(messageType, colorValue) {
+    const className = `log-${messageType}`;
+    const style = document.getElementById(`log-color-style`) || createStyleElement();
+
+    // Update the color label
+    const labelSpan = document.getElementById(`color-${messageType}-label`);
+    if (labelSpan) {
+        labelSpan.textContent = colorValue.toUpperCase();
+    }
+
+    // Add CSS rule for the color
+    let colorRule = `.${className} { color: ${colorValue} !important; }`;
+
+    // Update existing style or create new one
+    if (style.textContent.includes(`.${className}`)) {
+        style.textContent = style.textContent.replace(
+            new RegExp(`.${className}\\s*{[^}]*}`, 'g'),
+            colorRule
+        );
+    } else {
+        style.textContent += colorRule;
+    }
+
+    // Save to localStorage
+    localStorage.setItem(`logColor_${messageType}`, colorValue);
+    console.log(`[UI] Updated ${messageType} color to ${colorValue}`);
+}
+
+/**
+ * Create dynamic style element for color overrides
+ */
+function createStyleElement() {
+    const style = document.createElement('style');
+    style.id = 'log-color-style';
+    document.head.appendChild(style);
+
+    // Restore saved colors
+    ['chat', 'audit', 'system', 'info', 'warn', 'error', 'debug'].forEach(type => {
+        const savedColor = localStorage.getItem(`logColor_${type}`);
+        if (savedColor) {
+            const picker = document.getElementById(`color-${type}`);
+            if (picker) {
+                picker.value = savedColor;
+            }
+            const rule = `.log-${type} { color: ${savedColor} !important; }`;
+            style.textContent += rule;
+        }
+    });
+
+    return style;
+}
+
+/**
+ * Reset colors to default
+ */
+function resetColorsToDefault() {
+    const defaults = {
+        'chat': '#00ff00',
+        'audit': '#ffff00',
+        'system': '#ff00ff',
+        'info': '#2196f3',
+        'warn': '#ff9800',
+        'error': '#f44336',
+        'debug': '#888888'
+    };
+
+    Object.entries(defaults).forEach(([type, color]) => {
+        const picker = document.getElementById(`color-${type}`);
+        if (picker) {
+            picker.value = color;
+            updateLogColor(type, color);
+        }
+    });
+
+    console.log('[UI] Colors reset to default');
 }
 
 console.log('[ui.js] UI module loaded');
