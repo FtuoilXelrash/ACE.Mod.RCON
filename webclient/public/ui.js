@@ -542,9 +542,28 @@ function getSelectedPlayers() {
  * Handle incoming log messages
  */
 function handleLogMessage(response) {
-    // Display log message with appropriate styling based on level
-    const className = `${response.Status}-output`;
-    addOutput(response.Message, className);
+    // Parse message tags and apply color based on tag content
+    const message = response.Message;
+    let className = `${response.Status}-output`; // Default to log level color
+
+    // Check for message tags and override color if found
+    if (message.includes('[CHAT]')) {
+        className = 'log-chat';
+    } else if (message.includes('[AUDIT]')) {
+        className = 'log-audit';
+    } else if (message.includes('[SYSTEM]')) {
+        className = 'log-system';
+    } else if (message.includes('[WARNING]') || message.includes('[WARN]')) {
+        className = 'log-warn-output';
+    } else if (message.includes('[ERROR]')) {
+        className = 'log-error-output';
+    } else if (message.includes('[DEBUG]')) {
+        className = 'log-debug-output';
+    } else if (message.includes('[INFO]')) {
+        className = 'log-info-output';
+    }
+
+    addOutput(message, className);
 }
 
 /**

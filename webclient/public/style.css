@@ -282,6 +282,36 @@ main {
     color: #2196f3;
 }
 
+/* Log level output colors - matches server console */
+.log_debug-output {
+    color: #888;
+}
+
+.log_info-output {
+    color: #2196f3;
+}
+
+.log_warn-output {
+    color: #ff9800;
+}
+
+.log_error-output {
+    color: #f44336;
+}
+
+/* Message tag colors - matches ACE server console tags */
+.log-chat {
+    color: #00ff00;  /* Green for CHAT messages */
+}
+
+.log-audit {
+    color: #ffff00;  /* Yellow for AUDIT messages */
+}
+
+.log-system {
+    color: #ff00ff;  /* Magenta for SYSTEM messages */
+}
+
 .info-message {
     color: #888;
     font-style: italic;
