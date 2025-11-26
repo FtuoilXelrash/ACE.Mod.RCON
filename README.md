@@ -80,8 +80,6 @@ dotnet build -c Release      # Release build
 ## Documentation
 
 - **[PROTOCOL.md](PROTOCOL.md)** - JSON protocol and API details
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Architecture, design decisions, and development notes
-- **[ROADMAP.md](ROADMAP.md)** - Phase 2+ planned features
 
 ## Web Client
 
