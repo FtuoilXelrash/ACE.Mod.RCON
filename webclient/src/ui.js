@@ -375,9 +375,11 @@ function enableCommands() {
     const commandInput = document.getElementById('command-input');
     const sendBtn = document.getElementById('send-btn');
     const quickButtons = document.querySelectorAll('.quick-commands button');
+    const refreshPlayersBtn = document.getElementById('refresh-players-btn');
 
     if (commandInput) commandInput.disabled = false;
     if (sendBtn) sendBtn.disabled = false;
+    if (refreshPlayersBtn) refreshPlayersBtn.disabled = false;
 
     quickButtons.forEach(btn => {
         btn.disabled = false;
@@ -391,9 +393,11 @@ function disableCommands() {
     const commandInput = document.getElementById('command-input');
     const sendBtn = document.getElementById('send-btn');
     const quickButtons = document.querySelectorAll('.quick-commands button');
+    const refreshPlayersBtn = document.getElementById('refresh-players-btn');
 
     if (commandInput) commandInput.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
+    if (refreshPlayersBtn) refreshPlayersBtn.disabled = true;
 
     quickButtons.forEach(btn => {
         btn.disabled = true;
