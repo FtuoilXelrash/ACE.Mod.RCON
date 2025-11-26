@@ -33,6 +33,11 @@ public class RconConnection
 
         try
         {
+            // Send welcome message to telnet client
+            var welcomeMsg = Encoding.UTF8.GetBytes("\r\nACE RCON Server v1.0.38\r\nSend JSON commands (one per line)\r\nExample: {\"Command\": \"auth\", \"Password\": \"your_password\", \"Identifier\": 1}\r\n\r\n");
+            await networkStream.WriteAsync(welcomeMsg, 0, welcomeMsg.Length, cancellationToken);
+            await networkStream.FlushAsync(cancellationToken);
+
             while (isConnected && !cancellationToken.IsCancellationRequested)
             {
                 try
@@ -98,9 +103,9 @@ public class RconConnection
 
         try
         {
-            // Read until we get a complete JSON message
-            // Simple approach: read until we see closing brace
-            // In production, would need proper JSON parsing
+            // Read until we get a complete JSON message followed by newline
+            // Messages are delimited by \n to match telnet/console input
+            // Filter out telnet protocol bytes (IAC sequences: 0xFF ...)
 
             while (true)
             {
@@ -112,20 +117,54 @@ public class RconConnection
                     return null;
                 }
 
-                sb.Append(Encoding.UTF8.GetString(receiveBuffer, 0, bytesRead));
-
-                // Check if we have a complete JSON message
-                string content = sb.ToString();
-                if (content.Contains("{") && content.Contains("}"))
+                // Filter out telnet IAC (0xFF) protocol sequences
+                var cleanedBytes = new List<byte>();
+                int i = 0;
+                while (i < bytesRead)
                 {
-                    // Try to find a valid JSON object
-                    int lastBrace = content.LastIndexOf('}');
-                    if (lastBrace > content.IndexOf('{'))
+                    if (receiveBuffer[i] == 0xFF) // Telnet IAC marker
                     {
-                        // Extract the JSON object
-                        int firstBrace = content.IndexOf('{');
-                        return content.Substring(firstBrace, lastBrace - firstBrace + 1);
+                        // Skip this and next 2 bytes (IAC command sequence)
+                        i += 3;
                     }
+                    else if (receiveBuffer[i] < 32 && receiveBuffer[i] != 10 && receiveBuffer[i] != 13) // Control chars except LF/CR
+                    {
+                        // Skip other control characters
+                        i++;
+                    }
+                    else
+                    {
+                        cleanedBytes.Add(receiveBuffer[i]);
+                        i++;
+                    }
+                }
+
+                if (cleanedBytes.Count > 0)
+                {
+                    sb.Append(Encoding.UTF8.GetString(cleanedBytes.ToArray()));
+                }
+
+                // Check if we have a complete message (terminated with newline)
+                string content = sb.ToString();
+                int newlineIndex = content.IndexOf('\n');
+                if (newlineIndex >= 0)
+                {
+                    // Extract message up to newline
+                    string message = content.Substring(0, newlineIndex).Trim();
+
+                    // Keep any remaining data for next message
+                    if (newlineIndex + 1 < content.Length)
+                    {
+                        sb.Clear();
+                        sb.Append(content.Substring(newlineIndex + 1));
+                    }
+                    else
+                    {
+                        sb.Clear();
+                    }
+
+                    // Return the message (empty if only whitespace)
+                    return message.Length > 0 ? message : null;
                 }
             }
         }
