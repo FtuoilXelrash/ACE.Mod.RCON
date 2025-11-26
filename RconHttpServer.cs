@@ -25,10 +25,10 @@ public class RconHttpServer
         {
             cancellationTokenSource = new CancellationTokenSource();
             httpListener = new HttpListener();
-            httpListener.Prefixes.Add($"http://127.0.0.1:2948/");
+            httpListener.Prefixes.Add($"http://127.0.0.1:9005/");
             httpListener.Start();
 
-            ModManager.Log($"[RCON] Web server started on http://127.0.0.1:2948/");
+            ModManager.Log($"[RCON] Web server started on http://127.0.0.1:9005/");
 
             // Start accepting requests
             acceptTask = AcceptRequestsAsync(cancellationTokenSource.Token);

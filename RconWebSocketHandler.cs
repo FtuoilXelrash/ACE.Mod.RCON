@@ -113,6 +113,12 @@ public static class RconWebSocketHandler
     {
         try
         {
+            // Check if WebSocket is still open
+            if (webSocket.State != WebSocketState.Open)
+            {
+                return;
+            }
+
             var json = RconProtocol.FormatResponse(response);
             var data = Encoding.UTF8.GetBytes(json);
 
@@ -122,9 +128,20 @@ public static class RconWebSocketHandler
                 true,
                 CancellationToken.None);
         }
+        catch (ObjectDisposedException)
+        {
+            // Socket was disposed, ignore
+        }
+        catch (WebSocketException)
+        {
+            // WebSocket closed unexpectedly, ignore
+        }
         catch (Exception ex)
         {
-            ModManager.Log($"[RCON] ERROR sending WebSocket response: {ex.Message}", ModManager.LogLevel.Error);
+            if (!ex.Message.Contains("invalid state") && !ex.Message.Contains("Aborted"))
+            {
+                ModManager.Log($"[RCON] ERROR sending WebSocket response: {ex.Message}", ModManager.LogLevel.Error);
+            }
         }
     }
 }
@@ -136,7 +153,6 @@ public static class RconWebSocketHandler
 public class WebSocketRconConnection : RconConnection
 {
     private readonly WebSocket webSocket;
-    private bool isAuthenticated = false;
 
     public WebSocketRconConnection(WebSocket webSocket, Settings settings)
         : base(
@@ -149,19 +165,7 @@ public class WebSocketRconConnection : RconConnection
 
     private static int connectionIdCounter = 1000;
 
-    public new bool IsAuthenticated
-    {
-        get => isAuthenticated;
-        set => isAuthenticated = value;
-    }
-
-    public new void SetAuthenticated()
-    {
-        isAuthenticated = true;
-        ModManager.Log($"[RCON] WebSocket connection authenticated");
-    }
-
-    public new void SendMessage(RconResponse response)
+    public void SendMessage(RconResponse response)
     {
         // WebSocket responses are handled by the handler
         // This is for broadcast messages (Phase 2+)

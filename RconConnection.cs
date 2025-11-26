@@ -13,7 +13,7 @@ public class RconConnection
     private bool isConnected = true;
 
     public int ConnectionId => connectionId;
-    public bool IsAuthenticated { get; private set; } = false;
+    public bool IsAuthenticated { get; set; } = false;
 
     public RconConnection(int connectionId, Socket clientSocket, Settings settings)
     {

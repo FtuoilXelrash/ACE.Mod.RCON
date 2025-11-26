@@ -124,12 +124,24 @@ function onResponse(response) {
     if (response.Status === 'error') {
         addOutput(`Error: ${response.Message}`, 'error-message');
     } else {
-        // Try to pretty-print JSON response
-        try {
-            const formatted = JSON.stringify(response, null, 2);
-            addOutput(formatted, 'response-message');
-        } catch (e) {
-            addOutput(JSON.stringify(response), 'response-message');
+        // Handle special message formatting
+        let displayText = '';
+
+        if (response.Message) {
+            // Convert escape sequences to actual newlines for display
+            displayText = response.Message.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+        }
+
+        if (displayText) {
+            addOutput(displayText, 'response-message');
+        } else {
+            // Try to pretty-print JSON response
+            try {
+                const formatted = JSON.stringify(response, null, 2);
+                addOutput(formatted, 'response-message');
+            } catch (e) {
+                addOutput(JSON.stringify(response), 'response-message');
+            }
         }
     }
 }

@@ -31,7 +31,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 ModManager.Log($"[RCON] Starting web client server...");
                 httpServer = new RconHttpServer(Settings);
                 httpServer.Start();
-                ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:2948/");
+                ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:9005/");
             }
             else
             {
@@ -88,10 +88,10 @@ public class Settings
     public bool RconEnabled { get; set; } = true;
 
     /// <summary>
-    /// Port to listen for RCON connections
-    /// Default: 2947
+    /// Port to listen for RCON connections (TCP)
+    /// Default: 9004
     /// </summary>
-    public int RconPort { get; set; } = 2947;
+    public int RconPort { get; set; } = 9004;
 
     /// <summary>
     /// RCON password (used if no ACE admin account available)

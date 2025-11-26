@@ -103,13 +103,45 @@ class RconClient {
      * @returns {Promise} Resolves when authenticated
      */
     authenticate(password) {
-        return this.send('auth', [password]).then(response => {
-            if (response.Status === 'authenticated' || response.Status === 'success') {
-                this.isAuthenticated = true;
-                this.emit('authenticated');
-                return response;
-            } else {
-                throw new Error(response.Message || 'Authentication failed');
+        return new Promise((resolve, reject) => {
+            if (!this.isConnected) {
+                reject(new Error('Not connected to server'));
+                return;
+            }
+
+            const requestId = ++this.requestId;
+            const message = {
+                Command: 'auth',
+                Password: password,
+                Identifier: requestId
+            };
+
+            console.log('[RconClient] Authenticating...');
+
+            try {
+                const timeout = setTimeout(() => {
+                    this.pendingRequests.delete(requestId);
+                    reject(new Error('Authentication timeout'));
+                }, 30000);
+
+                this.pendingRequests.set(requestId, {
+                    resolve: (response) => {
+                        if (response.Status === 'authenticated' || response.Status === 'success') {
+                            this.isAuthenticated = true;
+                            this.emit('authenticated');
+                            resolve(response);
+                        } else {
+                            reject(new Error(response.Message || 'Authentication failed'));
+                        }
+                    },
+                    reject,
+                    timeout
+                });
+
+                this.ws.send(JSON.stringify(message));
+            } catch (error) {
+                this.pendingRequests.delete(requestId);
+                reject(error);
             }
         });
     }

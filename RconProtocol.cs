@@ -37,6 +37,8 @@ public static class RconProtocol
     /// </summary>
     public static async Task<RconResponse> HandleCommandAsync(RconRequest request, RconConnection connection)
     {
+        ModManager.Log($"[RCON] Command: {request.Command}, IsAuthenticated: {connection.IsAuthenticated}");
+
         // If not authenticated, require auth command
         if (!connection.IsAuthenticated)
         {
@@ -51,7 +53,9 @@ public static class RconProtocol
             }
 
             // Handle authentication
-            return await HandleAuthAsync(request);
+            var response = await HandleAuthAsync(request, connection);
+            ModManager.Log($"[RCON] After auth attempt - IsAuthenticated: {connection.IsAuthenticated}");
+            return response;
         }
 
         // Handle authenticated commands
@@ -73,7 +77,7 @@ public static class RconProtocol
     /// <summary>
     /// Handle authentication request
     /// </summary>
-    private static async Task<RconResponse> HandleAuthAsync(RconRequest request)
+    private static async Task<RconResponse> HandleAuthAsync(RconRequest request, RconConnection connection)
     {
         if (string.IsNullOrEmpty(request.Password))
         {
@@ -97,6 +101,9 @@ public static class RconProtocol
                 Message = "Invalid password"
             };
         }
+
+        // Mark connection as authenticated
+        connection.IsAuthenticated = true;
 
         return new RconResponse
         {
