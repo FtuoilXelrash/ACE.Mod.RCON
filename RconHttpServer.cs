@@ -1,6 +1,21 @@
 namespace RCON;
 
 /// <summary>
+/// WebSocket connection entry tracking socket and auth status
+/// </summary>
+public class WebSocketEntry
+{
+    public WebSocket WebSocket { get; set; }
+    public bool IsAuthenticated { get; set; }
+
+    public WebSocketEntry(WebSocket ws)
+    {
+        WebSocket = ws;
+        IsAuthenticated = false;
+    }
+}
+
+/// <summary>
 /// HTTP Server for Web Client
 /// Serves embedded HTML/CSS/JS files and handles WebSocket connections
 /// </summary>
@@ -10,13 +25,13 @@ public class RconHttpServer
     private HttpListener? httpListener;
     private CancellationTokenSource? cancellationTokenSource;
     private Task? acceptTask;
-    private readonly ConcurrentDictionary<int, WebSocket> activeWebSockets;
+    private readonly ConcurrentDictionary<int, WebSocketEntry> activeWebSockets;
     private int webSocketIdCounter = 0;
 
     public RconHttpServer(Settings settings)
     {
         this.settings = settings;
-        this.activeWebSockets = new ConcurrentDictionary<int, WebSocket>();
+        this.activeWebSockets = new ConcurrentDictionary<int, WebSocketEntry>();
     }
 
     /// <summary>
@@ -257,14 +272,28 @@ public class RconHttpServer
 
     /// <summary>
     /// Register a WebSocket connection for broadcasting
+    /// Tracks auth status separately
     /// </summary>
     public void RegisterWebSocket(WebSocket webSocket)
     {
         int wsId = Interlocked.Increment(ref webSocketIdCounter);
-        activeWebSockets.TryAdd(wsId, webSocket);
+        var entry = new WebSocketEntry(webSocket);
+        activeWebSockets.TryAdd(wsId, entry);
 
         if (settings.EnableLogging)
             ModManager.Log($"[RCON] WebSocket registered (ID: {wsId}, Total: {activeWebSockets.Count})");
+    }
+
+    /// <summary>
+    /// Mark a WebSocket as authenticated
+    /// </summary>
+    public void SetWebSocketAuthenticated(WebSocket webSocket, bool authenticated = true)
+    {
+        var entry = activeWebSockets.Values.FirstOrDefault(e => e.WebSocket == webSocket);
+        if (entry != null)
+        {
+            entry.IsAuthenticated = authenticated;
+        }
     }
 
     /// <summary>
@@ -272,7 +301,7 @@ public class RconHttpServer
     /// </summary>
     public void UnregisterWebSocket(WebSocket webSocket)
     {
-        var entry = activeWebSockets.FirstOrDefault(x => x.Value == webSocket);
+        var entry = activeWebSockets.FirstOrDefault(x => x.Value.WebSocket == webSocket);
         if (entry.Key != 0)
         {
             activeWebSockets.TryRemove(entry.Key, out _);
@@ -283,7 +312,8 @@ public class RconHttpServer
     }
 
     /// <summary>
-    /// Broadcast a message to all open WebSocket connections
+    /// Broadcast a message to all AUTHENTICATED WebSocket connections only
+    /// Unauthenticated connections will NOT receive broadcasts (security)
     /// </summary>
     public void BroadcastMessage(RconResponse message)
     {
@@ -294,7 +324,15 @@ public class RconHttpServer
         {
             try
             {
-                var ws = wsEntry.Value;
+                var wsConnection = wsEntry.Value;
+                var ws = wsConnection.WebSocket;
+
+                // Only send to authenticated connections
+                if (!wsConnection.IsAuthenticated)
+                {
+                    continue;
+                }
+
                 if (ws.State == WebSocketState.Open)
                 {
                     ws.SendAsync(

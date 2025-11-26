@@ -79,6 +79,12 @@ public static class RconWebSocketHandler
                         // Handle command
                         var response = await RconProtocol.HandleCommandAsync(request, wsConnection, settings);
 
+                        // Track authentication status for broadcast filtering
+                        if (wsConnection.IsAuthenticated && httpServer != null)
+                        {
+                            httpServer.SetWebSocketAuthenticated(webSocket, true);
+                        }
+
                         // Log response data if present
                         if (response.Data != null)
                         {

@@ -19,44 +19,41 @@
         </header>
 
         <main>
-            <div style="display: flex; flex: 1; gap: 20px; overflow: hidden;">
-                <!-- Tabs Area -->
-                <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-                    <!-- Tab Navigation -->
-                    <div class="tab-nav">
-                        <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
-                        <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
-                    </div>
+            <div style="display: flex; flex: 1; gap: 20px; overflow: hidden; flex-direction: column;">
+                <!-- Top Section: Tabs and Sidebar -->
+                <div style="display: flex; flex: 1; gap: 20px; overflow: hidden; min-height: 0;">
+                    <!-- Tabs Area -->
+                    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+                        <!-- Tab Navigation -->
+                        <div class="tab-nav">
+                            <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
+                            <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
+                        </div>
 
-                    <!-- Console Tab -->
-                    <section id="console-tab" class="tab-content active">
-                        <div id="output" class="output">
-                            <div class="info-message">
-                                Welcome to ACE RCON Web Client<br>
-                                Connecting to server...
+                        <!-- Console Tab -->
+                        <section id="console-tab" class="tab-content active">
+                            <div id="output" class="output">
+                                <div class="info-message">
+                                    Welcome to ACE RCON Web Client<br>
+                                    Connecting to server...
+                                </div>
                             </div>
-                        </div>
+                        </section>
 
-                        <div class="input-area">
-                            <input type="text" id="command-input" placeholder="Enter RCON command..." disabled>
-                            <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
-                        </div>
-                    </section>
-
-                    <!-- Players Tab -->
-                    <section id="players-tab" class="tab-content">
-                        <div class="players-toolbar">
-                            <button id="refresh-players-btn" onclick="refreshPlayers()" disabled>Refresh Players</button>
-                            <label style="display: flex; align-items: center; gap: 8px; margin-left: 20px;">
-                                <input type="checkbox" id="auto-refresh-checkbox" onchange="toggleAutoRefresh(this.checked)">
-                                <span>Auto-refresh on login/logoff</span>
-                            </label>
-                        </div>
-                        <div id="players-list" class="players-list">
-                            <div class="info-message">Players will appear here after authentication</div>
-                        </div>
-                    </section>
-                </div>
+                        <!-- Players Tab -->
+                        <section id="players-tab" class="tab-content">
+                            <div class="players-toolbar">
+                                <button id="refresh-players-btn" onclick="refreshPlayers()" disabled>Refresh Players</button>
+                                <label style="display: flex; align-items: center; gap: 8px; margin-left: 20px;">
+                                    <input type="checkbox" id="auto-refresh-checkbox" onchange="toggleAutoRefresh(this.checked)">
+                                    <span>Auto-refresh on login/logoff</span>
+                                </label>
+                            </div>
+                            <div id="players-list" class="players-list">
+                                <div class="info-message">Players will appear here after authentication</div>
+                            </div>
+                        </section>
+                    </div>
 
                 <!-- Sidebar -->
                 <aside id="sidebar" class="sidebar">
@@ -77,6 +74,12 @@
                     <button onclick="quickCommand('help')" disabled>Help</button>
                 </section>
                 </aside>
+            </div>
+
+            <!-- Input Area Section (stays at bottom) -->
+            <div class="input-area">
+                <input type="text" id="command-input" placeholder="Enter command..." disabled>
+                <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
             </div>
         </main>
 

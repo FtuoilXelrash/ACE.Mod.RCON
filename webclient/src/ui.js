@@ -367,7 +367,8 @@ function addOutput(message, className = '') {
 
     output.appendChild(line);
 
-    // Auto-scroll to bottom
+    // Auto-scroll to bottom - scroll the output container, not the page
+    // Directly set scrollTop immediately without delay
     output.scrollTop = output.scrollHeight;
 }
 
