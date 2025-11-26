@@ -47,6 +47,10 @@
                     <section id="players-tab" class="tab-content">
                         <div class="players-toolbar">
                             <button id="refresh-players-btn" onclick="refreshPlayers()" disabled>Refresh Players</button>
+                            <label style="display: flex; align-items: center; gap: 8px; margin-left: 20px;">
+                                <input type="checkbox" id="auto-refresh-checkbox" onchange="toggleAutoRefresh(this.checked)">
+                                <span>Auto-refresh on login/logoff</span>
+                            </label>
                         </div>
                         <div id="players-list" class="players-list">
                             <div class="info-message">Players will appear here after authentication</div>

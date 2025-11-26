@@ -296,4 +296,5 @@ public class RconResponse
     public Dictionary<string, object>? Data { get; set; }
     public string? Error { get; set; }
     public bool Debug { get; set; } = false;
+    public string? Command { get; set; } // For broadcast events like "log", "player_event", "status_update"
 }

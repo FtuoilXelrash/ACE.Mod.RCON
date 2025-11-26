@@ -6,6 +6,7 @@
 let client = null;
 let commandHistory = [];
 let historyIndex = 0;
+let autoRefreshPlayers = true;
 
 /**
  * Initialize the UI and WebSocket client
@@ -116,6 +117,26 @@ function onAuthenticated(authResponse) {
  */
 function onResponse(response) {
     console.log('[UI] Received response:', response);
+
+    // Handle broadcast log messages
+    if (response.Status && response.Status.startsWith('log_')) {
+        handleLogMessage(response);
+        return;
+    }
+
+    // Handle player events (login/logoff)
+    if (response.Status === 'player_event') {
+        handlePlayerEvent(response);
+        return;
+    }
+
+    // Handle server status updates
+    if (response.Status === 'status_update') {
+        if (response.Data) {
+            updateSidebarPanel(response);
+        }
+        return;
+    }
 
     // Check for auth response
     if (response.Status === 'authenticated' || response.Status === 'success') {
@@ -499,6 +520,45 @@ function getSelectedPlayers() {
         selected.push(name);
     });
     return selected;
+}
+
+/**
+ * Handle incoming log messages
+ */
+function handleLogMessage(response) {
+    // Display log message with appropriate styling based on level
+    const className = `${response.Status}-output`;
+    addOutput(response.Message, className);
+}
+
+/**
+ * Handle player events (login/logoff)
+ */
+function handlePlayerEvent(response) {
+    // Display event message
+    addOutput(`[Player Event] ${response.Message}`, 'info-message');
+
+    // Auto-refresh players list if enabled
+    if (autoRefreshPlayers && client && client.isAuthenticated) {
+        console.log('[UI] Auto-refreshing players due to player event');
+        client.send('players', []).catch(err => console.error('[UI] Error auto-refreshing players:', err));
+    }
+
+    // Update player count if data is available
+    if (response.Data && response.Data.count !== undefined) {
+        const playerEl = document.getElementById('player-count');
+        if (playerEl) {
+            playerEl.textContent = response.Data.count;
+        }
+    }
+}
+
+/**
+ * Toggle auto-refresh for players
+ */
+function toggleAutoRefresh(enabled) {
+    autoRefreshPlayers = enabled;
+    console.log('[UI] Auto-refresh players:', enabled ? 'enabled' : 'disabled');
 }
 
 console.log('[ui.js] UI module loaded');

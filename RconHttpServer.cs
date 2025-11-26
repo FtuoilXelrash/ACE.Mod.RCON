@@ -10,10 +10,13 @@ public class RconHttpServer
     private HttpListener? httpListener;
     private CancellationTokenSource? cancellationTokenSource;
     private Task? acceptTask;
+    private readonly ConcurrentDictionary<int, WebSocket> activeWebSockets;
+    private int webSocketIdCounter = 0;
 
     public RconHttpServer(Settings settings)
     {
         this.settings = settings;
+        this.activeWebSockets = new ConcurrentDictionary<int, WebSocket>();
     }
 
     /// <summary>
@@ -250,5 +253,69 @@ public class RconHttpServer
             ".svg" => "image/svg+xml",
             _ => "text/plain"
         };
+    }
+
+    /// <summary>
+    /// Register a WebSocket connection for broadcasting
+    /// </summary>
+    public void RegisterWebSocket(WebSocket webSocket)
+    {
+        int wsId = Interlocked.Increment(ref webSocketIdCounter);
+        activeWebSockets.TryAdd(wsId, webSocket);
+
+        if (settings.EnableLogging)
+            ModManager.Log($"[RCON] WebSocket registered (ID: {wsId}, Total: {activeWebSockets.Count})");
+    }
+
+    /// <summary>
+    /// Unregister a WebSocket connection
+    /// </summary>
+    public void UnregisterWebSocket(WebSocket webSocket)
+    {
+        var entry = activeWebSockets.FirstOrDefault(x => x.Value == webSocket);
+        if (entry.Key != 0)
+        {
+            activeWebSockets.TryRemove(entry.Key, out _);
+
+            if (settings.EnableLogging)
+                ModManager.Log($"[RCON] WebSocket unregistered (ID: {entry.Key}, Remaining: {activeWebSockets.Count})");
+        }
+    }
+
+    /// <summary>
+    /// Broadcast a message to all open WebSocket connections
+    /// </summary>
+    public void BroadcastMessage(RconResponse message)
+    {
+        var json = RconProtocol.FormatResponse(message);
+        var data = Encoding.UTF8.GetBytes(json);
+
+        foreach (var wsEntry in activeWebSockets)
+        {
+            try
+            {
+                var ws = wsEntry.Value;
+                if (ws.State == WebSocketState.Open)
+                {
+                    ws.SendAsync(
+                        new ArraySegment<byte>(data),
+                        WebSocketMessageType.Text,
+                        true,
+                        CancellationToken.None).GetAwaiter().GetResult();
+                }
+                else
+                {
+                    // Clean up closed sockets
+                    activeWebSockets.TryRemove(wsEntry.Key, out _);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (settings.EnableLogging)
+                    ModManager.Log($"[RCON] ERROR broadcasting to WebSocket: {ex.Message}", ModManager.LogLevel.Warn);
+
+                activeWebSockets.TryRemove(wsEntry.Key, out _);
+            }
+        }
     }
 }

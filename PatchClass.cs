@@ -68,6 +68,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 httpServer = new RconHttpServer(Settings);
                 httpServer.Start();
                 ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:9005/");
+
+                // Initialize the log broadcaster with server references
+                RconLogBroadcaster.Instance.Initialize(rconServer, httpServer);
+
+                // Initialize WebSocket handler with HTTP server reference
+                RconWebSocketHandler.Initialize(httpServer);
             }
             else
             {
@@ -212,4 +218,10 @@ public class Settings
     /// Set to true to see Data objects and detailed response info
     /// </summary>
     public bool DebugMode { get; set; } = false;
+
+    /// <summary>
+    /// Auto-refresh players list when players login/logoff
+    /// When enabled, player list will update automatically instead of requiring manual refresh
+    /// </summary>
+    public bool AutoRefreshPlayers { get; set; } = true;
 }

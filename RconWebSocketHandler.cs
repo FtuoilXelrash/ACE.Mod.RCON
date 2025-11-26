@@ -6,6 +6,13 @@ namespace RCON;
 /// </summary>
 public static class RconWebSocketHandler
 {
+    private static RconHttpServer? httpServer;
+
+    public static void Initialize(RconHttpServer server)
+    {
+        httpServer = server;
+    }
+
     /// <summary>
     /// Handle WebSocket connection
     /// </summary>
@@ -17,6 +24,9 @@ public static class RconWebSocketHandler
 
             try
             {
+                // Register WebSocket for broadcasting
+                httpServer?.RegisterWebSocket(webSocket);
+
                 // Create a pseudo-connection object for protocol handling
                 var wsConnection = new WebSocketRconConnection(webSocket, settings);
 
@@ -106,6 +116,9 @@ public static class RconWebSocketHandler
             }
             finally
             {
+                // Unregister WebSocket from broadcasting
+                httpServer?.UnregisterWebSocket(webSocket);
+
                 ModManager.Log("[RCON] WebSocket connection closed");
             }
         }
