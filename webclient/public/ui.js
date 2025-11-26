@@ -89,10 +89,15 @@ function onConnected() {
 /**
  * Called when authenticated
  */
-function onAuthenticated() {
+function onAuthenticated(authResponse) {
     console.log('[UI] Authenticated');
     updateStatus('authenticated', 'Authenticated');
     addOutput('Successfully authenticated!', 'success-message');
+
+    // Update sidebar with status data from auth response if available
+    if (authResponse && authResponse.Data) {
+        updateSidebarPanel(authResponse);
+    }
 
     // Enable UI
     enableCommands();

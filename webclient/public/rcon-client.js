@@ -128,7 +128,7 @@ class RconClient {
                     resolve: (response) => {
                         if (response.Status === 'authenticated' || response.Status === 'success') {
                             this.isAuthenticated = true;
-                            this.emit('authenticated');
+                            this.emit('authenticated', response);
                             resolve(response);
                         } else {
                             reject(new Error(response.Message || 'Authentication failed'));
