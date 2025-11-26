@@ -48,7 +48,8 @@ public class RconLogBroadcaster
     }
 
     /// <summary>
-    /// Broadcast a console log message to all authenticated RCON clients
+    /// Broadcast a console log message to all AUTHENTICATED RCON clients only
+    /// Unauthenticated connections will NOT receive logs (security)
     /// </summary>
     public void BroadcastLogMessage(string message, ModManager.LogLevel logLevel = ModManager.LogLevel.Info)
     {
@@ -73,10 +74,10 @@ public class RconLogBroadcaster
                 Command = "log" // Indicate this is a log event
             };
 
-            // Broadcast to all authenticated TCP connections
+            // Broadcast ONLY to authenticated TCP connections (RconServer does auth check)
             rconServer.BroadcastMessage(logResponse);
 
-            // Broadcast to all authenticated WebSocket connections
+            // Broadcast ONLY to authenticated WebSocket connections (filtering done by httpServer)
             httpServer?.BroadcastMessage(logResponse);
         }
         catch (Exception ex)
