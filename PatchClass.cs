@@ -54,6 +54,24 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
             if (Settings.RconEnabled)
             {
+                // Register custom log4net appender for console log broadcasting
+                try
+                {
+                    var logRepository = log4net.LogManager.GetRepository(System.Reflection.Assembly.GetAssembly(typeof(log4net.LogManager)));
+                    var loggerRepository = logRepository as log4net.Repository.Hierarchy.Hierarchy;
+                    if (loggerRepository != null)
+                    {
+                        var rconAppender = new RconLogAppender();
+                        rconAppender.ActivateOptions();
+                        loggerRepository.Root.AddAppender(rconAppender);
+                        ModManager.Log($"[RCON] Console log broadcaster registered");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[RCON] WARNING: Failed to register log broadcaster: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+
                 // Start TCP RCON server
                 ModManager.Log($"[RCON] Starting RCON server on port {Settings.RconPort}...");
                 rconServer = new RconServer(Settings);
@@ -169,6 +187,121 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         {
             ModManager.Log($"[RCON] ERROR reloading settings: {ex.Message}", ModManager.LogLevel.Error);
         }
+    }
+
+    /// <summary>
+    /// Harmony patch to detect player login
+    /// Patches Player.PlayerEnterWorld() in ACE.Server.WorldObjects
+    /// </summary>
+    [HarmonyPatch(typeof(Player), nameof(Player.PlayerEnterWorld))]
+    public static class Patch_PlayerEnterWorld
+    {
+        public static void Postfix(Player __instance)
+        {
+            try
+            {
+                if (__instance == null)
+                    return;
+
+                // Broadcast player login event
+                var playerData = new Dictionary<string, object>
+                {
+                    { "playerName", __instance.Name ?? "Unknown" },
+                    { "playerGuid", __instance.Guid.Full },
+                    { "level", __instance.Level ?? 0 },
+                    { "location", __instance.Location?.ToString() ?? "Unknown" },
+                    { "count", GetOnlinePlayerCount() }
+                };
+
+                RconLogBroadcaster.Instance.BroadcastPlayerEvent("login", playerData);
+
+                if (PatchClass.Settings.EnableLogging)
+                    ModManager.Log($"[RCON] Player login detected: {__instance.Name}", ModManager.LogLevel.Info);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[RCON] ERROR in Patch_PlayerEnterWorld: {ex.Message}", ModManager.LogLevel.Error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Harmony patch to detect player logoff
+    /// Patches Player.LogOut() in ACE.Server.WorldObjects
+    /// We capture this early to get player data before they're removed
+    /// </summary>
+    [HarmonyPatch(typeof(Player), nameof(Player.LogOut))]
+    public static class Patch_LogOut
+    {
+        public static void Prefix(Player __instance)
+        {
+            try
+            {
+                if (__instance == null)
+                    return;
+
+                // Broadcast player logoff event (use Prefix to capture before removal)
+                var playerData = new Dictionary<string, object>
+                {
+                    { "playerName", __instance.Name ?? "Unknown" },
+                    { "playerGuid", __instance.Guid.Full },
+                    { "level", __instance.Level ?? 0 },
+                    { "location", __instance.Location?.ToString() ?? "Unknown" },
+                    { "count", GetOnlinePlayerCount() - 1 } // -1 because they're still counted as online
+                };
+
+                RconLogBroadcaster.Instance.BroadcastPlayerEvent("logoff", playerData);
+
+                if (PatchClass.Settings.EnableLogging)
+                    ModManager.Log($"[RCON] Player logoff detected: {__instance.Name}", ModManager.LogLevel.Info);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[RCON] ERROR in Patch_LogOut: {ex.Message}", ModManager.LogLevel.Error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Helper method to get current online player count
+    /// </summary>
+    private static int GetOnlinePlayerCount()
+    {
+        try
+        {
+            // Get PlayerManager type and call GetOnlineCount if available
+            var playerManagerType = Type.GetType("ACE.Server.Managers.PlayerManager, ACE.Server");
+            if (playerManagerType != null)
+            {
+                var method = playerManagerType.GetMethod("GetOnlineCount", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (method != null)
+                {
+                    var result = method.Invoke(null, null);
+                    if (result is int count)
+                        return count;
+                }
+
+                // Fallback: try getting onlinePlayers count via reflection
+                var onlinePlayersField = playerManagerType.GetField("onlinePlayers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                if (onlinePlayersField != null)
+                {
+                    var dict = onlinePlayersField.GetValue(null);
+                    var countProperty = dict?.GetType().GetProperty("Count");
+                    if (countProperty != null)
+                    {
+                        var count = countProperty.GetValue(dict);
+                        if (count is int intCount)
+                            return intCount;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[RCON] ERROR getting online player count: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        return 0;
     }
 }
 
