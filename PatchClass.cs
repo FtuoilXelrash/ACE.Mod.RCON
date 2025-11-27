@@ -23,14 +23,17 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             await Task.Delay(100);
 
             // Use reflection to call the protected SaveSettingsAsync method
+            // This will serialize all properties with their current values, filling in any missing fields
             var saveMethod = SettingsContainer.GetType().GetMethod("SaveSettingsAsync",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
             if (saveMethod != null)
             {
 #pragma warning disable CS8600, CS8602
-                await (Task<bool>)saveMethod.Invoke(SettingsContainer, new object[] { SettingsContainer.Settings })!;
+                var saved = await (Task<bool>)saveMethod.Invoke(SettingsContainer, new object[] { SettingsContainer.Settings })!;
 #pragma warning restore CS8600, CS8602
+                if (saved)
+                    ModManager.Log($"[RCON] Settings.json updated with any missing fields", ModManager.LogLevel.Info);
             }
         }
     }
@@ -81,17 +84,27 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 ModManager.Log($"[RCON] Max connections: {Settings.MaxConnections}");
                 ModManager.Log($"[RCON] Verbose logging: {(Settings.EnableLogging ? "enabled" : "disabled")}");
 
-                // Start HTTP/WebSocket server for web client
-                ModManager.Log($"[RCON] Starting web client server...");
-                httpServer = new RconHttpServer(Settings);
-                httpServer.Start();
-                ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:9005/");
+                // Start HTTP/WebSocket server for web client (if enabled)
+                if (Settings.WebRconEnabled)
+                {
+                    ModManager.Log($"[RCON] Starting web client server...");
+                    httpServer = new RconHttpServer(Settings);
+                    httpServer.Start();
+                    ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:9005/");
 
-                // Initialize the log broadcaster with server references
-                RconLogBroadcaster.Instance.Initialize(rconServer, httpServer);
+                    // Initialize the log broadcaster with server references
+                    RconLogBroadcaster.Instance.Initialize(rconServer, httpServer);
 
-                // Initialize WebSocket handler with HTTP server reference
-                RconWebSocketHandler.Initialize(httpServer);
+                    // Initialize WebSocket handler with HTTP server reference
+                    RconWebSocketHandler.Initialize(httpServer);
+                }
+                else
+                {
+                    ModManager.Log($"[RCON] Web RCON is disabled. Only TCP RCON available.");
+
+                    // Still initialize broadcaster with TCP server only (no WebSocket server)
+                    RconLogBroadcaster.Instance.Initialize(rconServer, null!);
+                }
             }
             else
             {
@@ -350,9 +363,16 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 public class Settings
 {
     /// <summary>
-    /// Enable/disable RCON functionality
+    /// Enable/disable RCON functionality (TCP and WebSocket)
     /// </summary>
     public bool RconEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Enable/disable Web RCON (WebSocket only)
+    /// When disabled, only TCP RCON is available
+    /// Default: true
+    /// </summary>
+    public bool WebRconEnabled { get; set; } = true;
 
     /// <summary>
     /// Port to listen for RCON connections (TCP)

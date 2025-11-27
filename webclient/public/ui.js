@@ -749,6 +749,22 @@ function resetColorsToDefault() {
 function populateSettingsPanel(config) {
     if (!config) return;
 
+    // RconEnabled (read-only)
+    if (config.RconEnabled !== undefined) {
+        const checkbox = document.getElementById('setting-rcon-enabled');
+        checkbox.checked = config.RconEnabled;
+        document.getElementById('setting-rcon-enabled-current').textContent = config.RconEnabled ? 'Currently: ON' : 'Currently: OFF';
+        document.getElementById('setting-rcon-enabled-current').style.color = config.RconEnabled ? '#4caf50' : '#ff9800';
+    }
+
+    // WebRconEnabled
+    if (config.WebRconEnabled !== undefined) {
+        const checkbox = document.getElementById('setting-web-rcon-enabled');
+        checkbox.checked = config.WebRconEnabled;
+        document.getElementById('setting-web-rcon-enabled-current').textContent = config.WebRconEnabled ? 'Currently: ON' : 'Currently: OFF';
+        document.getElementById('setting-web-rcon-enabled-current').style.color = config.WebRconEnabled ? '#4caf50' : '#ff9800';
+    }
+
     // MaxConnections
     if (config.MaxConnections !== undefined) {
         document.getElementById('setting-max-connections-current').textContent = `Current: ${config.MaxConnections}`;
@@ -801,6 +817,7 @@ function populateSettingsPanel(config) {
  */
 function saveSettings() {
     const settings = {
+        WebRconEnabled: document.getElementById('setting-web-rcon-enabled').checked,
         MaxConnections: document.getElementById('setting-max-connections').value,
         ConnectionTimeoutSeconds: document.getElementById('setting-connection-timeout').value,
         EnableLogging: document.getElementById('setting-enable-logging').checked,

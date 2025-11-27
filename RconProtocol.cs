@@ -399,6 +399,8 @@ Auth: {""Command"": ""auth"", ""Password"": ""your_password"", ""Identifier"": 1
     {
         var configData = new Dictionary<string, object>
         {
+            { "RconEnabled", settings?.RconEnabled ?? true },
+            { "WebRconEnabled", settings?.WebRconEnabled ?? true },
             { "MaxConnections", settings?.MaxConnections ?? 10 },
             { "ConnectionTimeoutSeconds", settings?.ConnectionTimeoutSeconds ?? 300 },
             { "EnableLogging", settings?.EnableLogging ?? false },

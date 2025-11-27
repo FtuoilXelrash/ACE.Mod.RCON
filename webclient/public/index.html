@@ -101,6 +101,20 @@
                                 <h2 style="margin-top: 30px;">Server Settings</h2>
                                 <p style="color: #888; font-size: 12px; margin-bottom: 15px;">⚠️ Changes to these settings require a server restart to take effect.</p>
                                 <div class="settings-info">
+                                    <!-- RconEnabled -->
+                                    <div class="setting-item">
+                                        <label for="setting-rcon-enabled">RCON Enabled (TCP):</label>
+                                        <input type="checkbox" id="setting-rcon-enabled" class="setting-checkbox" disabled>
+                                        <span class="setting-current" id="setting-rcon-enabled-current"></span>
+                                    </div>
+
+                                    <!-- WebRconEnabled -->
+                                    <div class="setting-item">
+                                        <label for="setting-web-rcon-enabled">Web RCON Enabled:</label>
+                                        <input type="checkbox" id="setting-web-rcon-enabled" class="setting-checkbox">
+                                        <span class="setting-current" id="setting-web-rcon-enabled-current"></span>
+                                    </div>
+
                                     <!-- MaxConnections -->
                                     <div class="setting-item">
                                         <label for="setting-max-connections">Max Connections:</label>
