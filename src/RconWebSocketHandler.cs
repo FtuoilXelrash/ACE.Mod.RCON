@@ -16,7 +16,7 @@ public static class RconWebSocketHandler
     /// <summary>
     /// Handle WebSocket connection
     /// </summary>
-    public static async Task HandleWebSocketAsync(WebSocket webSocket, Settings settings)
+    public static async Task HandleWebSocketAsync(WebSocket webSocket, Settings settings, TcpClient? client = null, NetworkStream? stream = null)
     {
         using (webSocket)
         {
@@ -32,14 +32,19 @@ public static class RconWebSocketHandler
 
                 ModManager.Log("[RCON] WebSocket connection established");
 
-                while (webSocket.State == WebSocketState.Open)
+                int loopCount = 0;
+                while (webSocket.State == WebSocketState.Open && loopCount < 100)
                 {
+                    loopCount++;
                     try
                     {
+                        ModManager.Log($"[RCON] WebSocket loop iteration {loopCount}, state: {webSocket.State}, CloseStatus: {webSocket.CloseStatus}", ModManager.LogLevel.Info);
                         // Read message from WebSocket - no timeout to allow idle connections
                         var result = await webSocket.ReceiveAsync(
                             new ArraySegment<byte>(buffer),
                             CancellationToken.None);
+
+                        ModManager.Log($"[RCON] WebSocket received data, type: {result.MessageType}, count: {result.Count}, EndOfMessage: {result.EndOfMessage}", ModManager.LogLevel.Info);
 
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
@@ -100,9 +105,10 @@ public static class RconWebSocketHandler
                         if (wex.Message.Contains("closed") || wex.Message.Contains("Aborted") || wex.Message.Contains("invalid state"))
                         {
                             // Normal shutdown, don't log as error
+                            ModManager.Log($"[RCON] WebSocket closed normally: {wex.Message}", ModManager.LogLevel.Info);
                             break;
                         }
-                        ModManager.Log($"[RCON] WebSocket error: {wex.Message}", ModManager.LogLevel.Error);
+                        ModManager.Log($"[RCON] WebSocket error: {wex.Message} | Stack: {wex.StackTrace}", ModManager.LogLevel.Error);
                         break;
                     }
                     catch (Exception ex)
@@ -110,7 +116,11 @@ public static class RconWebSocketHandler
                         // Don't log errors during shutdown
                         if (!ex.Message.Contains("Aborted") && !ex.Message.Contains("invalid state") && !ex.Message.Contains("closed"))
                         {
-                            ModManager.Log($"[RCON] ERROR in WebSocket handler: {ex.Message}", ModManager.LogLevel.Error);
+                            ModManager.Log($"[RCON] ERROR in WebSocket handler: {ex.Message} | Stack: {ex.StackTrace}", ModManager.LogLevel.Error);
+                        }
+                        else
+                        {
+                            ModManager.Log($"[RCON] WebSocket closed: {ex.Message}", ModManager.LogLevel.Info);
                         }
                         break;
                     }
@@ -118,7 +128,7 @@ public static class RconWebSocketHandler
             }
             catch (Exception ex)
             {
-                ModManager.Log($"[RCON] ERROR handling WebSocket: {ex.Message}", ModManager.LogLevel.Error);
+                ModManager.Log($"[RCON] ERROR handling WebSocket: {ex.Message} | Stack: {ex.StackTrace}", ModManager.LogLevel.Error);
             }
             finally
             {
@@ -128,6 +138,10 @@ public static class RconWebSocketHandler
                 ModManager.Log("[RCON] WebSocket connection closed");
             }
         }
+
+        // Clean up TCP resources after WebSocket is disposed
+        try { stream?.Dispose(); } catch { }
+        try { client?.Dispose(); } catch { }
     }
 
     /// <summary>
@@ -168,24 +182,4 @@ public static class RconWebSocketHandler
             }
         }
     }
-}
-
-/// <summary>
-/// Pseudo-connection for WebSocket clients
-/// Allows WebSocket clients to work with RconProtocol
-/// </summary>
-public class WebSocketRconConnection : RconConnection
-{
-    private readonly WebSocket webSocket;
-
-    public WebSocketRconConnection(WebSocket webSocket, Settings settings)
-        : base(
-            connectionId: System.Threading.Interlocked.Increment(ref connectionIdCounter),
-            clientSocket: null!,
-            settings: settings)
-    {
-        this.webSocket = webSocket;
-    }
-
-    private static int connectionIdCounter = 1000;
 }
