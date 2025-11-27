@@ -28,11 +28,11 @@ public class RconServer
         {
             cancellationTokenSource = new CancellationTokenSource();
 
-            // Create TCP listener
-            tcpListener = new TcpListener(IPAddress.Loopback, settings.RconPort);
+            // Create TCP listener - bind to all interfaces to accept both local and remote connections
+            tcpListener = new TcpListener(IPAddress.Any, settings.RconPort);
             tcpListener.Start(settings.MaxConnections);
 
-            ModManager.Log($"[RCON] TCP listener started on port {settings.RconPort}");
+            ModManager.Log($"[RCON] TCP listener started on 0.0.0.0:{settings.RconPort}");
 
             // Start accepting clients asynchronously
             acceptClientsTask = AcceptClientsAsync(cancellationTokenSource.Token);
