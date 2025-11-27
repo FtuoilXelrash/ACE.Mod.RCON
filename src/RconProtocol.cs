@@ -74,6 +74,12 @@ public static class RconProtocol
             return SetDebugFlag(HandleStatus(request, settings), settings);
         }
 
+        // Handle PLAYERS command - returns player list (allowed after auth)
+        if (command == "players" && connection.IsAuthenticated)
+        {
+            return SetDebugFlag(HandlePlayers(request, settings), settings);
+        }
+
         // Handle authentication if using ACE auth mode
         if (useAceAuth && !connection.IsAuthenticated)
         {
@@ -498,9 +504,6 @@ public static class RconProtocol
                 statusData["AceDatabasePatchVersion"] = "Unknown";
             }
 
-            // Add online players
-            statusData["OnlinePlayers"] = GetOnlinePlayersList();
-
             return new RconResponse
             {
                 Identifier = request.Identifier,
@@ -517,6 +520,41 @@ public static class RconProtocol
                 Identifier = request.Identifier,
                 Status = "error",
                 Message = $"Error getting status: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Handle PLAYERS command - returns current player count and list
+    /// </summary>
+    private static RconResponse HandlePlayers(RconRequest request, Settings? settings)
+    {
+        var playersData = new Dictionary<string, object>();
+
+        try
+        {
+            var onlinePlayers = PlayerManager.GetAllOnline()?.Count ?? 0;
+
+            playersData["CurrentPlayers"] = onlinePlayers;
+            playersData["MaxPlayers"] = (int)ConfigManager.Config.Server.Network.MaximumAllowedSessions;
+            playersData["OnlinePlayers"] = GetOnlinePlayersList();
+
+            return new RconResponse
+            {
+                Identifier = request.Identifier,
+                Status = "success",
+                Message = "Player list",
+                Data = playersData
+            };
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[RCON] ERROR in HandlePlayers: {ex.Message}", ModManager.LogLevel.Error);
+            return new RconResponse
+            {
+                Identifier = request.Identifier,
+                Status = "error",
+                Message = $"Error getting player list: {ex.Message}"
             };
         }
     }

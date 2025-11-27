@@ -298,9 +298,9 @@ function onResponse(response) {
     if (response.Data) {
         updateSidebarPanel(response);
 
-        // Display players in Players tab if this is a players response
-        if (response.Data.players && response.Data.count !== undefined) {
-            displayPlayers(response.Data);
+        // Display players in Players tab if this is a players/hello response
+        if (response.Data.OnlinePlayers && Array.isArray(response.Data.OnlinePlayers)) {
+            displayPlayers({ players: response.Data.OnlinePlayers });
         }
     }
 
