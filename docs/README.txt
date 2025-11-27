@@ -156,9 +156,10 @@ v1.0.x - Phase 1 Refinements
 
 DOCUMENTATION
 --------------
-README.md      - Detailed feature documentation
-PROTOCOL.md    - JSON protocol and API specification
-changes.md     - Development history and changes
+README.md               - Detailed feature documentation (root)
+docs/PROTOCOL.md        - JSON protocol and API specification
+research/changes.md     - Development history and Phase 1 implementation details
+research/              - Additional research, planning, and development notes
 
 SUPPORT
 -------
