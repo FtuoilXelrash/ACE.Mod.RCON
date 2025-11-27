@@ -237,10 +237,10 @@ function handleAuthenticationComplete(authResponse) {
         updateSidebarPanel(authResponse);
     }
 
-    // TODO: Fetch client configuration from server
-    // setTimeout(() => {
-    //     fetchClientConfig();
-    // }, 500);
+    // Fetch client configuration from server
+    setTimeout(() => {
+        fetchClientConfig();
+    }, 500);
 
     // Enable UI
     enableCommands();
@@ -470,6 +470,84 @@ async function sendCommand() {
 }
 
 /**
+ * Send acecommands command
+ */
+async function aceCommands() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        const aceCommandsBtn = document.getElementById('ace-commands-btn');
+        if (aceCommandsBtn) aceCommandsBtn.disabled = true;
+
+        addOutput('> acecommands', 'command-message');
+
+        const response = await client.send('acecommands', []);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Command error: ${error.message}`, 'error-message');
+    } finally {
+        const aceCommandsBtn = document.getElementById('ace-commands-btn');
+        if (aceCommandsBtn) aceCommandsBtn.disabled = false;
+    }
+}
+
+/**
+ * Send listplayers command
+ */
+async function listPlayers() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        const listPlayersBtn = document.getElementById('list-players-btn');
+        if (listPlayersBtn) listPlayersBtn.disabled = true;
+
+        addOutput('> listplayers', 'command-message');
+
+        const response = await client.send('listplayers', []);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Command error: ${error.message}`, 'error-message');
+    } finally {
+        const listPlayersBtn = document.getElementById('list-players-btn');
+        if (listPlayersBtn) listPlayersBtn.disabled = false;
+    }
+}
+
+/**
+ * Send population command
+ */
+async function population() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        const populationBtn = document.getElementById('population-btn');
+        if (populationBtn) populationBtn.disabled = true;
+
+        addOutput('> pop', 'command-message');
+
+        const response = await client.send('pop', []);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Command error: ${error.message}`, 'error-message');
+    } finally {
+        const populationBtn = document.getElementById('population-btn');
+        if (populationBtn) populationBtn.disabled = false;
+    }
+}
+
+/**
  * Navigate command history
  */
 function navigateHistory(direction) {
@@ -551,10 +629,16 @@ function enableCommands() {
     const sendBtn = document.getElementById('send-btn');
     const quickButtons = document.querySelectorAll('.quick-commands button');
     const refreshPlayersBtn = document.getElementById('refresh-players-btn');
+    const aceCommandsBtn = document.getElementById('ace-commands-btn');
+    const listPlayersBtn = document.getElementById('list-players-btn');
+    const populationBtn = document.getElementById('population-btn');
 
     if (commandInput) commandInput.disabled = false;
     if (sendBtn) sendBtn.disabled = false;
     if (refreshPlayersBtn) refreshPlayersBtn.disabled = false;
+    if (aceCommandsBtn) aceCommandsBtn.disabled = false;
+    if (listPlayersBtn) listPlayersBtn.disabled = false;
+    if (populationBtn) populationBtn.disabled = false;
 
     quickButtons.forEach(btn => {
         btn.disabled = false;
@@ -569,10 +653,16 @@ function disableCommands() {
     const sendBtn = document.getElementById('send-btn');
     const quickButtons = document.querySelectorAll('.quick-commands button');
     const refreshPlayersBtn = document.getElementById('refresh-players-btn');
+    const aceCommandsBtn = document.getElementById('ace-commands-btn');
+    const listPlayersBtn = document.getElementById('list-players-btn');
+    const populationBtn = document.getElementById('population-btn');
 
     if (commandInput) commandInput.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
     if (refreshPlayersBtn) refreshPlayersBtn.disabled = true;
+    if (aceCommandsBtn) aceCommandsBtn.disabled = true;
+    if (listPlayersBtn) listPlayersBtn.disabled = true;
+    if (populationBtn) populationBtn.disabled = true;
 
     quickButtons.forEach(btn => {
         btn.disabled = true;

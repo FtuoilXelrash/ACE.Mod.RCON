@@ -49,20 +49,19 @@
         </header>
 
         <main>
-            <div style="display: flex; flex: 1; gap: 20px; overflow: hidden; flex-direction: column;">
-                <!-- Top Section: Tabs and Sidebar -->
-                <div style="display: flex; flex: 1; gap: 20px; overflow: hidden; min-height: 0;">
-                    <!-- Tabs Area -->
-                    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
-                        <!-- Tab Navigation -->
-                        <div class="tab-nav">
-                            <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
-                            <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
-                            <button class="tab-button" onclick="switchTab('config-tab')">Configuration</button>
-                        </div>
+            <!-- Tab Navigation (spans full width) -->
+            <div class="tab-nav">
+                <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
+                <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
+                <button class="tab-button" onclick="switchTab('config-tab')">Configuration</button>
+            </div>
 
-                        <!-- Console Tab -->
-                        <section id="console-tab" class="tab-content active">
+            <!-- Content Area: Tabs and Sidebar Side-by-Side -->
+            <div style="display: flex; flex: 1 1 100%; gap: 20px; overflow: hidden; min-height: 0; height: auto;">
+                <!-- Tabs Area -->
+                <div style="flex: 1 1 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+                    <!-- Console Tab -->
+                    <section id="console-tab" class="tab-content active">
                             <div id="output" class="output">
                                 <div class="info-message">
                                     Welcome to ACE RCON Web Client<br>
@@ -200,18 +199,23 @@
                         </section>
                     </div>
 
-                <!-- Sidebar -->
-                <aside id="sidebar" class="sidebar">
-                <section class="server-info">
-                    <h3>Server Info</h3>
-                    <div id="server-stats">
-                        <p>Status: <span id="server-status">Disconnected</span></p>
-                        <p>Players: <span id="player-count">0</span></p>
-                        <p>Uptime: <span id="uptime">0s</span></p>
-                    </div>
-                </section>
-                </aside>
-            </div>
+                    <!-- Sidebar -->
+                    <aside id="sidebar" class="sidebar">
+                        <section class="server-info">
+                            <h3>Server Info</h3>
+                            <div id="server-stats">
+                                <p>Status: <span id="server-status">Disconnected</span></p>
+                                <p>Players: <span id="player-count">0</span></p>
+                                <p>Uptime: <span id="uptime">0s</span></p>
+                            </div>
+                        </section>
+                        <section class="ace-commands-section">
+                            <button id="ace-commands-btn" onclick="aceCommands()" disabled>ACE Commands</button>
+                            <button id="list-players-btn" onclick="listPlayers()" disabled>List Players</button>
+                            <button id="population-btn" onclick="population()" disabled>Population</button>
+                        </section>
+                    </aside>
+                </div>
 
             <!-- Input Area Section (stays at bottom) -->
             <div class="input-area">
