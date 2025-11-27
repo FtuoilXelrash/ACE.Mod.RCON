@@ -79,6 +79,7 @@
 
 	<ItemGroup>
 		<None Update="src/Meta.json">
+			<Link>Meta.json</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
