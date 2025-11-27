@@ -62,6 +62,18 @@ public static class RconProtocol
             return SetDebugFlag(HandleConfig(request, settings), settings);
         }
 
+        // Handle HELLO command - returns initial server state (allowed after auth)
+        if (command == "hello" && connection.IsAuthenticated)
+        {
+            return SetDebugFlag(HandleHello(request, settings), settings);
+        }
+
+        // Handle STATUS command - returns detailed server status (allowed after auth)
+        if (command == "status" && connection.IsAuthenticated)
+        {
+            return SetDebugFlag(HandleStatus(request, settings), settings);
+        }
+
         // Handle authentication if using ACE auth mode
         if (useAceAuth && !connection.IsAuthenticated)
         {
@@ -259,7 +271,7 @@ public static class RconProtocol
 
             return new Dictionary<string, object>
             {
-                { "ServerName", "Asheron's Call" },
+                { "ServerName", ConfigManager.Config.Server.WorldName },
                 { "Status", "Online" },
                 { "CurrentPlayers", onlinePlayers },
                 { "MaxPlayers", 255 },
@@ -413,5 +425,71 @@ public static class RconProtocol
             Message = "Client configuration",
             Data = configData
         };
+    }
+
+    /// <summary>
+    /// Handle HELLO command - returns initial server state needed by clients
+    /// Sent automatically to clients after authentication
+    /// Includes player list for immediate display
+    /// </summary>
+    private static RconResponse HandleHello(RconRequest request, Settings? settings)
+    {
+        var helloData = GetServerStatus();
+        helloData["Version"] = RconConnection.ModVersion;
+        helloData["OnlinePlayers"] = GetOnlinePlayersList();
+
+        return new RconResponse
+        {
+            Identifier = request.Identifier,
+            Status = "success",
+            Message = "Server hello",
+            Data = helloData
+        };
+    }
+
+    /// <summary>
+    /// Handle STATUS command - returns detailed server monitoring data
+    /// Lean response for periodic polling (no ServerName since it doesn't change)
+    /// </summary>
+    private static RconResponse HandleStatus(RconRequest request, Settings? settings)
+    {
+        var statusData = new Dictionary<string, object>();
+
+        try
+        {
+            // Add basic status info (excluding ServerName which doesn't change)
+            var basicStatus = GetServerStatus();
+            foreach (var kvp in basicStatus)
+            {
+                if (kvp.Key != "ServerName")  // Skip ServerName for STATUS
+                {
+                    statusData[kvp.Key] = kvp.Value;
+                }
+            }
+
+            // Add version
+            statusData["Version"] = RconConnection.ModVersion;
+
+            // Add online players
+            statusData["OnlinePlayers"] = GetOnlinePlayersList();
+
+            return new RconResponse
+            {
+                Identifier = request.Identifier,
+                Status = "success",
+                Message = "Server status",
+                Data = statusData
+            };
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[RCON] ERROR in HandleStatus: {ex.Message}", ModManager.LogLevel.Error);
+            return new RconResponse
+            {
+                Identifier = request.Identifier,
+                Status = "error",
+                Message = $"Error getting status: {ex.Message}"
+            };
+        }
     }
 }

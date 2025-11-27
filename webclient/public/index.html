@@ -204,7 +204,8 @@
                         <section class="server-info">
                             <h3>Server Info</h3>
                             <div id="server-stats">
-                                <p>Status: <span id="server-status">Disconnected</span></p>
+                                <p>Server: <span id="server-name">Loading...</span></p>
+                                <p>Status: <span id="server-status">Offline</span></p>
                                 <p>Players: <span id="player-count">0</span></p>
                                 <p>Uptime: <span id="uptime">0s</span></p>
                             </div>
@@ -213,6 +214,8 @@
                             <button id="ace-commands-btn" onclick="aceCommands()" disabled>ACE Commands</button>
                             <button id="list-players-btn" onclick="listPlayers()" disabled>List Players</button>
                             <button id="population-btn" onclick="population()" disabled>Population</button>
+                            <button id="status-btn" onclick="statusCommand()" disabled>Status</button>
+                            <button id="hello-btn" onclick="helloCommand()" disabled>Hello</button>
                         </section>
                     </aside>
                 </div>

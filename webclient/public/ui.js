@@ -201,7 +201,13 @@ function onConnected() {
         // We mark as authenticated immediately (server already validated in URL)
         console.log('[UI] Connected with Rust-style auth (password in URL) - immediately authenticated');
         client.isAuthenticated = true;
-        handleAuthenticationComplete();
+        // Fetch HELLO data to populate sidebar
+        client.send('hello', []).then(response => {
+            handleAuthenticationComplete(response);
+        }).catch(err => {
+            console.error('[UI] Failed to get hello:', err);
+            handleAuthenticationComplete();
+        });
     } else {
         // For ACE-style, we're waiting for auth command response
         console.log('[UI] Connected, waiting for ACE auth...');
@@ -329,6 +335,12 @@ function updateSidebarPanel(response) {
     try {
         const data = response.Data;
         if (!data) return;
+
+        // Update server name
+        const nameEl = document.getElementById('server-name');
+        if (nameEl && data.ServerName) {
+            nameEl.textContent = data.ServerName;
+        }
 
         // Update from status command
         if (data.Status || data.Uptime) {
@@ -548,6 +560,58 @@ async function population() {
 }
 
 /**
+ * Send status command - returns detailed server status
+ */
+async function statusCommand() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        const statusBtn = document.getElementById('status-btn');
+        if (statusBtn) statusBtn.disabled = true;
+
+        addOutput('> status', 'command-message');
+
+        const response = await client.send('status', []);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Command error: ${error.message}`, 'error-message');
+    } finally {
+        const statusBtn = document.getElementById('status-btn');
+        if (statusBtn) statusBtn.disabled = false;
+    }
+}
+
+/**
+ * Send HELLO command to get initial server state
+ */
+async function helloCommand() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        const helloBtn = document.getElementById('hello-btn');
+        if (helloBtn) helloBtn.disabled = true;
+
+        addOutput('> hello', 'command-message');
+
+        const response = await client.send('hello', []);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Command error: ${error.message}`, 'error-message');
+    } finally {
+        const helloBtn = document.getElementById('hello-btn');
+        if (helloBtn) helloBtn.disabled = false;
+    }
+}
+
+/**
  * Navigate command history
  */
 function navigateHistory(direction) {
@@ -632,6 +696,8 @@ function enableCommands() {
     const aceCommandsBtn = document.getElementById('ace-commands-btn');
     const listPlayersBtn = document.getElementById('list-players-btn');
     const populationBtn = document.getElementById('population-btn');
+    const statusBtn = document.getElementById('status-btn');
+    const helloBtn = document.getElementById('hello-btn');
 
     if (commandInput) commandInput.disabled = false;
     if (sendBtn) sendBtn.disabled = false;
@@ -639,6 +705,8 @@ function enableCommands() {
     if (aceCommandsBtn) aceCommandsBtn.disabled = false;
     if (listPlayersBtn) listPlayersBtn.disabled = false;
     if (populationBtn) populationBtn.disabled = false;
+    if (statusBtn) statusBtn.disabled = false;
+    if (helloBtn) helloBtn.disabled = false;
 
     quickButtons.forEach(btn => {
         btn.disabled = false;
@@ -656,6 +724,8 @@ function disableCommands() {
     const aceCommandsBtn = document.getElementById('ace-commands-btn');
     const listPlayersBtn = document.getElementById('list-players-btn');
     const populationBtn = document.getElementById('population-btn');
+    const statusBtn = document.getElementById('status-btn');
+    const helloBtn = document.getElementById('hello-btn');
 
     if (commandInput) commandInput.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
@@ -663,6 +733,8 @@ function disableCommands() {
     if (aceCommandsBtn) aceCommandsBtn.disabled = true;
     if (listPlayersBtn) listPlayersBtn.disabled = true;
     if (populationBtn) populationBtn.disabled = true;
+    if (statusBtn) statusBtn.disabled = true;
+    if (helloBtn) helloBtn.disabled = true;
 
     quickButtons.forEach(btn => {
         btn.disabled = true;
