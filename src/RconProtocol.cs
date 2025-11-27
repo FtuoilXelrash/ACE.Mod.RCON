@@ -442,11 +442,13 @@ public static class RconProtocol
         try
         {
             var dbVersion = DatabaseManager.World.GetVersion();
-            helloData["AceDatabaseVersion"] = $"{dbVersion.BaseVersion}.{dbVersion.PatchVersion}";
+            helloData["AceDatabaseBaseVersion"] = dbVersion.BaseVersion;
+            helloData["AceDatabasePatchVersion"] = dbVersion.PatchVersion;
         }
         catch
         {
-            helloData["AceDatabaseVersion"] = "Unknown";
+            helloData["AceDatabaseBaseVersion"] = "Unknown";
+            helloData["AceDatabasePatchVersion"] = "Unknown";
         }
 
         helloData["OnlinePlayers"] = GetOnlinePlayersList();
@@ -487,11 +489,13 @@ public static class RconProtocol
             try
             {
                 var dbVersion = DatabaseManager.World.GetVersion();
-                statusData["AceDatabaseVersion"] = $"{dbVersion.BaseVersion}.{dbVersion.PatchVersion}";
+                statusData["AceDatabaseBaseVersion"] = dbVersion.BaseVersion;
+                statusData["AceDatabasePatchVersion"] = dbVersion.PatchVersion;
             }
             catch
             {
-                statusData["AceDatabaseVersion"] = "Unknown";
+                statusData["AceDatabaseBaseVersion"] = "Unknown";
+                statusData["AceDatabasePatchVersion"] = "Unknown";
             }
 
             // Add online players

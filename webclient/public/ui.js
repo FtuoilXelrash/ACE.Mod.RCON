@@ -372,10 +372,16 @@ function updateSidebarPanel(response) {
                 aceServerBuildEl.textContent = data.AceServerBuild;
             }
         }
-        if (data.AceDatabaseVersion) {
-            const aceDatabaseVersionEl = document.getElementById('ace-database-version');
-            if (aceDatabaseVersionEl) {
-                aceDatabaseVersionEl.textContent = data.AceDatabaseVersion;
+        if (data.AceDatabaseBaseVersion) {
+            const aceDatabaseBaseEl = document.getElementById('ace-database-base');
+            if (aceDatabaseBaseEl) {
+                aceDatabaseBaseEl.textContent = data.AceDatabaseBaseVersion;
+            }
+        }
+        if (data.AceDatabasePatchVersion) {
+            const aceDatabasePatchEl = document.getElementById('ace-database-patch');
+            if (aceDatabasePatchEl) {
+                aceDatabasePatchEl.textContent = data.AceDatabasePatchVersion;
             }
         }
 

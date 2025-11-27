@@ -456,6 +456,12 @@ main {
     font-weight: bold;
 }
 
+.version-dot {
+    color: var(--accent-color);
+    font-weight: bold;
+    margin: 0 2px;
+}
+
 .quick-commands {
     display: flex;
     flex-direction: column;
