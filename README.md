@@ -4,24 +4,27 @@ RCON (Remote Console) mod for Asheron's Call Emulator (ACE) server. Provides rem
 
 ## Features
 
-**Phase 1 - Current Implementation:**
-- ✅ TCP RCON server on port 9004 (configurable)
-- ✅ WebSocket HTTP server on port 9005 (independently controllable)
+**Phase 1-5 - Current Implementation:**
+- ✅ TCP RCON server on port 9004 (configurable via RconPort)
+- ✅ WebSocket HTTP server on port 9005 (configurable via WebRconPort, independently controllable)
 - ✅ Web-based RCON client interface with responsive design
-- ✅ Dual authentication modes:
-  - Rust-style: Password in WebSocket URL path or first TCP message
-  - ACE-style: JSON packet-based authentication with login landing page
+- ✅ Auto-detecting authentication modes (server-driven, no user dropdown):
+  - Rust-style: Password-only authentication (RCON Password Authentication)
+  - ACE-style: Username and password authentication (ACE Login/Password Authentication)
 - ✅ Command passthrough to ACE CommandManager (execute ANY console command)
-- ✅ Server status monitoring (uptime, player count)
-- ✅ Online player list with character details
+- ✅ Server status monitoring (uptime, player count, ACE version, database versions)
+- ✅ Online player list with character details (GUID, level, location)
 - ✅ Loaded landblock information
 - ✅ Real-time console interface with server log streaming
-- ✅ Player event detection (login/logoff with auto-refresh)
+- ✅ Player event detection (login/logoff with auto-refresh and real-time uptime updates)
 - ✅ Customizable console message colors (tag-based and log-level coloring)
 - ✅ Configuration tab for runtime settings management
-- ✅ Debug mode for detailed response inspection
+- ✅ Debug mode for detailed response inspection and server logging
 - ✅ Configurable reconnection settings (attempts and delay)
 - ✅ Auto-refresh persistence via browser local storage
+- ✅ Security: Invalid password keeps user on login page, no console access
+- ✅ Stop Server Now button with confirmation dialog
+- ✅ Quick command buttons for common operations
 
 ## Quick Start
 

@@ -180,6 +180,7 @@ Server Info Sidebar:
   - ACE Server version and build number
   - World Database Base and Patch versions
   - Quick command buttons (ACE Commands, List Players, Population, Status, Hello)
+  - Stop Server Now button with confirmation dialog (red background, requires explicit confirmation)
 
 AVAILABLE COMMANDS
 ------------------
@@ -232,6 +233,9 @@ SECURITY
 - Pre-authentication users cannot see console logs
 - Logs only broadcast to authenticated clients
 - Connection timeout prevents idle resource leaks
+- Invalid password keeps user on login page (no console access granted)
+- Auth mode auto-detected from server (no user confusion with dropdown)
+- Stop Server Now requires explicit confirmation dialog
 
 ARCHITECTURE
 ------------
