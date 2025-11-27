@@ -15,10 +15,48 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         base.Init();
 
-        // After loading/creating settings, save them back to add any missing fields
-        // This ensures old Settings.json files get updated with new default settings
+        // After loading/creating settings, ensure all properties have values and save
+        // This ensures old Settings.json files get updated with any new default settings
         if (SettingsContainer?.Settings != null)
         {
+            var settings = SettingsContainer.Settings;
+
+            // Ensure all properties have their default values if not set
+            // This handles missing fields in older Settings.json files
+            if (settings.RconEnabled == false && string.IsNullOrEmpty(settings.RconPassword))
+                // Only reset if it looks like a completely empty settings object
+            {
+                // Use default Settings instance to fill in defaults
+                var defaultSettings = new Settings();
+                settings.RconEnabled = defaultSettings.RconEnabled;
+                settings.RconPort = defaultSettings.RconPort;
+                settings.WebRconEnabled = defaultSettings.WebRconEnabled;
+                settings.WebRconPort = defaultSettings.WebRconPort;
+                settings.RconPassword = defaultSettings.RconPassword;
+                settings.UseAceAuthentication = defaultSettings.UseAceAuthentication;
+                settings.MaxConnections = defaultSettings.MaxConnections;
+                settings.ConnectionTimeoutSeconds = defaultSettings.ConnectionTimeoutSeconds;
+                settings.EnableLogging = defaultSettings.EnableLogging;
+                settings.DebugMode = defaultSettings.DebugMode;
+                settings.AutoRefreshPlayers = defaultSettings.AutoRefreshPlayers;
+                settings.MaxReconnectAttempts = defaultSettings.MaxReconnectAttempts;
+                settings.ReconnectDelayMs = defaultSettings.ReconnectDelayMs;
+            }
+            else
+            {
+                // For existing files, fill in any missing fields with defaults
+                var defaultSettings = new Settings();
+
+                // This is a simple approach: check if WebRconPort is 0 (uninitialized)
+                // and set it to default
+                if (settings.WebRconPort == 0)
+                    settings.WebRconPort = defaultSettings.WebRconPort;
+                if (settings.MaxReconnectAttempts == 0)
+                    settings.MaxReconnectAttempts = defaultSettings.MaxReconnectAttempts;
+                if (settings.ReconnectDelayMs == 0)
+                    settings.ReconnectDelayMs = defaultSettings.ReconnectDelayMs;
+            }
+
             // Give the file a moment to settle after initial creation
             await Task.Delay(100);
 
