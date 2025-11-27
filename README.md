@@ -138,8 +138,6 @@ dotnet build -c Release      # Release build
 ## Documentation
 
 - **[PROTOCOL.md](docs/PROTOCOL.md)** - JSON protocol and API details
-- **[Development History](research/changes.md)** - Changelog and Phase 1 implementation details
-- **[Research & Planning](research/)** - Development notes, research, and planning documents
 
 ## Architecture
 
