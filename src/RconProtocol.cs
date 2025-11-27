@@ -268,13 +268,14 @@ public static class RconProtocol
         {
             var onlinePlayers = PlayerManager.GetAllOnline()?.Count ?? 0;
             var uptime = GetServerUptime();
+            var maxPlayers = (int)ConfigManager.Config.Server.Network.MaximumAllowedSessions;
 
             return new Dictionary<string, object>
             {
                 { "ServerName", ConfigManager.Config.Server.WorldName },
                 { "Status", "Online" },
                 { "CurrentPlayers", onlinePlayers },
-                { "MaxPlayers", 255 },
+                { "MaxPlayers", maxPlayers },
                 { "Uptime", uptime },
                 { "WorldTime", DateTime.UtcNow.ToString("O") }
             };
@@ -435,7 +436,19 @@ public static class RconProtocol
     private static RconResponse HandleHello(RconRequest request, Settings? settings)
     {
         var helloData = GetServerStatus();
-        helloData["Version"] = RconConnection.ModVersion;
+        helloData["AceServerVersion"] = ServerBuildInfo.Version;
+        helloData["AceServerBuild"] = ServerBuildInfo.Build;
+
+        try
+        {
+            var dbVersion = DatabaseManager.World.GetVersion();
+            helloData["AceDatabaseVersion"] = $"{dbVersion.BaseVersion}.{dbVersion.PatchVersion}";
+        }
+        catch
+        {
+            helloData["AceDatabaseVersion"] = "Unknown";
+        }
+
         helloData["OnlinePlayers"] = GetOnlinePlayersList();
 
         return new RconResponse
@@ -467,8 +480,19 @@ public static class RconProtocol
                 }
             }
 
-            // Add version
-            statusData["Version"] = RconConnection.ModVersion;
+            // Add version info
+            statusData["AceServerVersion"] = ServerBuildInfo.Version;
+            statusData["AceServerBuild"] = ServerBuildInfo.Build;
+
+            try
+            {
+                var dbVersion = DatabaseManager.World.GetVersion();
+                statusData["AceDatabaseVersion"] = $"{dbVersion.BaseVersion}.{dbVersion.PatchVersion}";
+            }
+            catch
+            {
+                statusData["AceDatabaseVersion"] = "Unknown";
+            }
 
             // Add online players
             statusData["OnlinePlayers"] = GetOnlinePlayersList();

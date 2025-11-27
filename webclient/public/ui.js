@@ -359,6 +359,26 @@ function updateSidebarPanel(response) {
             }
         }
 
+        // Update version info
+        if (data.AceServerVersion) {
+            const aceServerVersionEl = document.getElementById('ace-server-version');
+            if (aceServerVersionEl) {
+                aceServerVersionEl.textContent = data.AceServerVersion;
+            }
+        }
+        if (data.AceServerBuild) {
+            const aceServerBuildEl = document.getElementById('ace-server-build');
+            if (aceServerBuildEl) {
+                aceServerBuildEl.textContent = data.AceServerBuild;
+            }
+        }
+        if (data.AceDatabaseVersion) {
+            const aceDatabaseVersionEl = document.getElementById('ace-database-version');
+            if (aceDatabaseVersionEl) {
+                aceDatabaseVersionEl.textContent = data.AceDatabaseVersion;
+            }
+        }
+
         // Update from players command
         if (data.players && data.count !== undefined) {
             const playerEl = document.getElementById('player-count');
