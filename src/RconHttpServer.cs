@@ -33,7 +33,6 @@ public class RconHttpServer
     private Task? listenTask;
     private readonly ConcurrentDictionary<int, WebSocketEntry> activeWebSockets;
     private int webSocketIdCounter = 0;
-    private const int PORT = 9005;
 
     public RconHttpServer(Settings settings)
     {
@@ -48,15 +47,16 @@ public class RconHttpServer
     {
         try
         {
-            // Bind to all interfaces on port 9005
-            tcpListener = new TcpListener(IPAddress.Any, PORT);
+            // Bind to all interfaces on configured WebRconPort
+            int port = settings.WebRconPort;
+            tcpListener = new TcpListener(IPAddress.Any, port);
             tcpListener.Start();
 
             cancellationTokenSource = new CancellationTokenSource();
 
-            ModManager.Log($"[RCON] Web server started on 0.0.0.0:{PORT}/");
-            ModManager.Log($"[RCON] Access at http://localhost:{PORT}/ or http://<server-ip>:{PORT}/");
-            ModManager.Log($"[RCON] WebSocket endpoint: ws://localhost:{PORT}/rcon or ws://<server-ip>:{PORT}/rcon");
+            ModManager.Log($"[RCON] Web server started on 0.0.0.0:{port}/");
+            ModManager.Log($"[RCON] Access at http://localhost:{port}/ or http://<server-ip>:{port}/");
+            ModManager.Log($"[RCON] WebSocket endpoint: ws://localhost:{port}/rcon or ws://<server-ip>:{port}/rcon");
 
             // Start accepting connections in background
             listenTask = AcceptConnectionsAsync(cancellationTokenSource.Token);

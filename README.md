@@ -39,8 +39,9 @@ Edit `Settings.json`:
 {
   "RconEnabled": true,
   "RconPort": 9004,
-  "RconPassword": "your_secure_password",
   "WebRconEnabled": true,
+  "WebRconPort": 9005,
+  "RconPassword": "your_secure_password",
   "UseAceAuthentication": false,
   "MaxConnections": 10,
   "ConnectionTimeoutSeconds": 300,
@@ -55,8 +56,9 @@ Edit `Settings.json`:
 **Settings Description:**
 - **RconEnabled**: Enable/disable TCP RCON server (port 9004)
 - **RconPort**: TCP port for RCON server (default: 9004)
+- **WebRconEnabled**: Enable/disable Web RCON interface (WebSocket) - can be disabled independently from TCP RCON
+- **WebRconPort**: WebSocket HTTP server port (default: 9005)
 - **RconPassword**: Password for authentication (change this!)
-- **WebRconEnabled**: Enable/disable Web RCON interface (WebSocket on port 9005) - can be disabled independently
 - **UseAceAuthentication**: Use ACE-style packet-based authentication instead of Rust-style URL-based auth (default: false)
   - `false` (Rust-style): Password in WebSocket URL path (e.g., `ws://host:9005/password`) or first line of TCP connection
   - `true` (ACE-style): Send `{"Command": "auth", "Password": "xxx"}` after connecting

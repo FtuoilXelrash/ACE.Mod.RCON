@@ -383,10 +383,16 @@ public class Settings
     public int RconPort { get; set; } = 9004;
 
     /// <summary>
+    /// Port to listen for Web RCON connections (WebSocket HTTP)
+    /// Default: 9005
+    /// </summary>
+    public int WebRconPort { get; set; } = 9005;
+
+    /// <summary>
     /// RCON password (used if no ACE admin account available)
     /// Change this to something secure!
     /// </summary>
-    public string RconPassword { get; set; } = "change_me_to_secure_password";
+    public string RconPassword { get; set; } = "your_secure_password";
 
     /// <summary>
     /// Maximum concurrent RCON connections allowed
