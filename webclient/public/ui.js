@@ -8,8 +8,7 @@ let commandHistory = [];
 let historyIndex = 0;
 let autoRefreshPlayers = true;
 let clientConfig = null;
-let useAceAuthentication = false; // Will be set from server config
-let userSelectedAuthMode = null; // Track which auth mode user selected on login page
+let useAceAuthentication = false; // Will be set from server config (auto-detected)
 
 /**
  * Initialize the UI and WebSocket client
@@ -67,22 +66,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Show login page on load (no auto-connect - user must login first)
     showLoginPage();
-    updateAuthModeUI(); // Initialize UI based on default auth mode (Rust)
+    updateAuthModeUI(); // Initialize UI based on server's auth mode
 });
 
 /**
- * Update login page UI based on selected auth mode
+ * Update login page UI based on server's UseAceAuthentication setting
  */
 function updateAuthModeUI() {
-    const authModeSelect = document.getElementById('login-auth-mode');
     const infoText = document.getElementById('login-info-text');
     const usernameGroup = document.getElementById('login-username-group');
 
-    if (authModeSelect.value === 'rust') {
-        infoText.textContent = 'Password will be sent in WebSocket URL path';
+    if (!useAceAuthentication) {
+        // Rust-style: password only
+        infoText.textContent = 'RCON Password Authentication is required before access can be granted';
         usernameGroup.style.display = 'none';
     } else {
-        infoText.textContent = 'Username and password will be sent via JSON authentication command';
+        // ACE-style: username and password
+        infoText.textContent = 'ACE Login/Password Authentication is required before access can be granted';
         usernameGroup.style.display = 'flex';
     }
 }
@@ -94,18 +94,17 @@ function handleLogin(event) {
     event.preventDefault();
     const password = document.getElementById('login-password').value;
     const username = document.getElementById('login-username')?.value || '';
-    const authModeSelect = document.getElementById('login-auth-mode');
     const loginBtn = document.getElementById('login-btn');
     const loginError = document.getElementById('login-error');
 
     loginBtn.disabled = true;
     loginError.style.display = 'none';
 
-    userSelectedAuthMode = authModeSelect.value;
-    console.log('[UI] User selected auth mode:', userSelectedAuthMode);
+    // Use server-detected auth mode
+    console.log('[UI] Using server-detected auth mode - UseAceAuthentication:', useAceAuthentication);
 
-    // If user selected Rust-style, set password on client before connecting
-    if (userSelectedAuthMode === 'rust') {
+    // If Rust-style, set password on client before connecting
+    if (!useAceAuthentication) {
         client.setPassword(password);
         // Save password to localStorage for future sessions
         localStorage.setItem('rconPassword', password);
@@ -113,8 +112,8 @@ function handleLogin(event) {
 
     // Connect to server
     connectToServer().then(() => {
-        // After connecting, handle authentication based on mode
-        if (userSelectedAuthMode === 'ace') {
+        // After connecting, handle authentication based on server's auth mode
+        if (useAceAuthentication) {
             // ACE-style: use authenticate method with password (username is optional/future use)
             console.log('[UI] Sending ACE-style auth command...');
             client.authenticate(password).catch(err => {
@@ -124,7 +123,7 @@ function handleLogin(event) {
                 loginBtn.disabled = false;
             });
         }
-        // For Rust-style, password is in URL so connection is already authenticated
+        // For Rust-style, password is in URL so connection will be validated
         // onConnected() will handle proceeding to authenticated state
     }).catch(err => {
         console.error('[UI] Connection failed:', err);
@@ -166,12 +165,15 @@ function hideLoginPage() {
 
 /**
  * Handle server configuration response
- * (Called after connection, not needed for initial login page display)
+ * (Called after connection, updates login page with correct auth mode)
  */
 function onServerConfig(config) {
     console.log('[UI] Server config received:', config);
     useAceAuthentication = config.UseAceAuthentication || false;
     console.log('[UI] UseAceAuthentication:', useAceAuthentication);
+
+    // Update login page UI to match server's auth mode
+    updateAuthModeUI();
 }
 
 /**
@@ -179,12 +181,33 @@ function onServerConfig(config) {
  */
 async function connectToServer() {
     try {
-        console.log('[UI] Connecting to server with auth mode:', userSelectedAuthMode);
+        console.log('[UI] Connecting to server with auth mode - UseAceAuthentication:', useAceAuthentication);
         await client.connect();
         console.log('[UI] Connected to server');
         return Promise.resolve();
     } catch (error) {
         console.error('[UI] Connection failed:', error);
+
+        // Show error on login page
+        const loginError = document.getElementById('login-error');
+        const loginBtn = document.getElementById('login-btn');
+
+        if (!useAceAuthentication) {
+            // For Rust-style, connection failure likely means invalid password in URL
+            if (loginError) {
+                loginError.textContent = 'Connection failed - Invalid password in URL';
+                loginError.style.display = 'block';
+            }
+        } else {
+            // For ACE-style, connection failure is network error
+            if (loginError) {
+                loginError.textContent = 'Failed to connect to server: ' + error.message;
+                loginError.style.display = 'block';
+            }
+        }
+
+        if (loginBtn) loginBtn.disabled = false;
+
         throw error;
     }
 }
@@ -193,20 +216,33 @@ async function connectToServer() {
  * Called when WebSocket connects
  */
 function onConnected() {
-    console.log('[UI] WebSocket connected, auth mode:', userSelectedAuthMode);
+    console.log('[UI] WebSocket connected, auth mode - UseAceAuthentication:', useAceAuthentication);
     updateStatus('connected', 'Connected - Authenticating...');
 
-    if (userSelectedAuthMode === 'rust') {
-        // For Rust-style auth, password is in URL so connection is immediately authenticated
-        // We mark as authenticated immediately (server already validated in URL)
-        console.log('[UI] Connected with Rust-style auth (password in URL) - immediately authenticated');
-        client.isAuthenticated = true;
-        // Fetch HELLO data to populate sidebar
+    if (!useAceAuthentication) {
+        // For Rust-style auth, password is in URL
+        // Server validates and either:
+        // 1. Closes connection immediately with error if invalid
+        // 2. Allows connection if valid
+        // We wait for HELLO response to confirm auth succeeded
+        console.log('[UI] Connected with Rust-style auth (password in URL) - waiting for server validation...');
+        // Fetch HELLO data to populate sidebar (this also confirms auth worked)
         client.send('hello', []).then(response => {
+            // If HELLO succeeds, auth must have succeeded
+            client.isAuthenticated = true;
             handleAuthenticationComplete(response);
         }).catch(err => {
-            console.error('[UI] Failed to get hello:', err);
-            handleAuthenticationComplete();
+            console.error('[UI] Failed to get hello (auth likely failed):', err);
+            const loginError = document.getElementById('login-error');
+            const loginBtn = document.getElementById('login-btn');
+            if (loginError) {
+                loginError.textContent = 'Authentication failed - Invalid password';
+                loginError.style.display = 'block';
+            }
+            if (loginBtn) loginBtn.disabled = false;
+            // Close connection and show login page
+            showLoginPage();
+            client.ws.close();
         });
     } else {
         // For ACE-style, we're waiting for auth command response
@@ -294,6 +330,20 @@ function onResponse(response) {
         }
     }
 
+    // Check for auth error - keep user on login page
+    if (response.Status === 'error' && response.Command === 'auth') {
+        // Auth failed - show error on login page
+        const loginError = document.getElementById('login-error');
+        const loginBtn = document.getElementById('login-btn');
+        if (loginError) {
+            loginError.textContent = response.Message || 'Authentication failed - Invalid password';
+            loginError.style.display = 'block';
+        }
+        if (loginBtn) loginBtn.disabled = false;
+        // Don't display to console, and don't proceed to main UI
+        return;
+    }
+
     // Update sidebar with data if available
     if (response.Data) {
         updateSidebarPanel(response);
@@ -304,7 +354,12 @@ function onResponse(response) {
         }
     }
 
-    // Display response
+    // Display response (but not if not authenticated)
+    if (!client.isAuthenticated && response.Status === 'error') {
+        // Don't show unauthenticated errors in console
+        return;
+    }
+
     if (response.Status === 'error') {
         addOutput(`Error: ${response.Message}`, 'error-message');
     } else {
@@ -638,6 +693,37 @@ async function helloCommand() {
 }
 
 /**
+ * Stop server immediately
+ */
+async function stopNow() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    // Confirm before stopping
+    if (!confirm('Are you sure you want to stop the server immediately? This will disconnect all players!')) {
+        return;
+    }
+
+    try {
+        const stopBtn = document.getElementById('stop-now-btn');
+        if (stopBtn) stopBtn.disabled = true;
+
+        addOutput('> stop-now', 'command-message');
+
+        const response = await client.send('stop-now', []);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Command error: ${error.message}`, 'error-message');
+    } finally {
+        const stopBtn = document.getElementById('stop-now-btn');
+        if (stopBtn) stopBtn.disabled = false;
+    }
+}
+
+/**
  * Navigate command history
  */
 function navigateHistory(direction) {
@@ -724,6 +810,7 @@ function enableCommands() {
     const populationBtn = document.getElementById('population-btn');
     const statusBtn = document.getElementById('status-btn');
     const helloBtn = document.getElementById('hello-btn');
+    const stopNowBtn = document.getElementById('stop-now-btn');
 
     if (commandInput) commandInput.disabled = false;
     if (sendBtn) sendBtn.disabled = false;
@@ -733,6 +820,7 @@ function enableCommands() {
     if (populationBtn) populationBtn.disabled = false;
     if (statusBtn) statusBtn.disabled = false;
     if (helloBtn) helloBtn.disabled = false;
+    if (stopNowBtn) stopNowBtn.disabled = false;
 
     quickButtons.forEach(btn => {
         btn.disabled = false;
@@ -752,6 +840,7 @@ function disableCommands() {
     const populationBtn = document.getElementById('population-btn');
     const statusBtn = document.getElementById('status-btn');
     const helloBtn = document.getElementById('hello-btn');
+    const stopNowBtn = document.getElementById('stop-now-btn');
 
     if (commandInput) commandInput.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
@@ -761,6 +850,7 @@ function disableCommands() {
     if (populationBtn) populationBtn.disabled = true;
     if (statusBtn) statusBtn.disabled = true;
     if (helloBtn) helloBtn.disabled = true;
+    if (stopNowBtn) stopNowBtn.disabled = true;
 
     quickButtons.forEach(btn => {
         btn.disabled = true;

@@ -96,19 +96,26 @@ class RconClient {
                     this.emit('error', event);
                 };
 
-                this.ws.onclose = () => {
-                    console.log('[RconClient] Disconnected');
+                this.ws.onclose = (event) => {
+                    console.log('[RconClient] Disconnected', event);
                     this.isConnected = false;
                     this.isAuthenticated = false;
                     this.emit('disconnected');
 
-                    // Try to reconnect
-                    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    // Check if connection was rejected due to auth failure (PolicyViolation close code = 1008)
+                    const isAuthFailure = event.code === 1008; // WebSocketCloseStatus.PolicyViolation
+
+                    // Try to reconnect (but not for auth failures on initial connection from connect() call)
+                    // Auth failures are detected by the caller
+                    if (this.reconnectAttempts < this.maxReconnectAttempts && !isAuthFailure) {
                         this.reconnectAttempts++;
                         console.log(`[RconClient] Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
                         setTimeout(() => {
                             this.connect().catch(err => console.error('[RconClient] Reconnect failed:', err));
                         }, this.reconnectDelay);
+                    } else if (isAuthFailure) {
+                        console.log('[RconClient] Connection rejected due to auth failure');
+                        reject(new Error('Connection rejected - Invalid credentials'));
                     } else {
                         console.log('[RconClient] Max reconnect attempts reached');
                         reject(new Error('Connection failed'));

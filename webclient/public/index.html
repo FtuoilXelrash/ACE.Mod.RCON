@@ -16,13 +16,6 @@
                 <h1>ACE RCON Web Client</h1>
                 <p>Enter Your Credentials</p>
                 <form onsubmit="handleLogin(event)">
-                    <div class="login-form-group">
-                        <label for="login-auth-mode">Authentication Mode:</label>
-                        <select id="login-auth-mode" class="auth-mode-select" onchange="updateAuthModeUI()">
-                            <option value="rust">Rust-style (URL Password)</option>
-                            <option value="ace">ACE-style (Username & Password)</option>
-                        </select>
-                    </div>
                     <div class="login-form-group" id="login-username-group" style="display: none;">
                         <input type="text" id="login-username" placeholder="Enter Username" autocomplete="username">
                     </div>
@@ -220,6 +213,7 @@
                             <button id="population-btn" onclick="population()" disabled>Population</button>
                             <button id="status-btn" onclick="statusCommand()" disabled>Status</button>
                             <button id="hello-btn" onclick="helloCommand()" disabled>Hello</button>
+                            <button id="stop-now-btn" onclick="stopNow()" disabled style="background-color: #d32f2f; margin-top: 10px;">Stop Server Now</button>
                         </section>
                     </aside>
                 </div>
