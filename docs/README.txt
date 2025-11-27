@@ -68,15 +68,24 @@ Configuration Tab:
 Server Info Sidebar:
   - Server status (online/offline)
   - Current player count
-  - Server uptime (days, hours, minutes, seconds)
-  - Quick command buttons
+  - Server uptime (days, hours, minutes, seconds) - updates on player login/logoff
+  - ACE Server version and build number
+  - World Database Base and Patch versions
+  - Quick command buttons (ACE Commands, List Players, Population, Status, Hello)
 
 COMMANDS
 --------
-status      - Server status and statistics
-players     - List of online players
-landblocks  - Loaded landblock information
-help        - Available commands
+Protocol Commands:
+  config      - Client configuration and auth mode
+  hello       - Initial server state (status, version, player list, database info)
+  status      - Lean server status for periodic polling
+  players     - Current player list and count
+
+Common Commands:
+  acecommands - Display available ACE commands
+  listplayers - List online players
+  population  - Show player population
+  help        - Available commands
 
 REAL-TIME FEATURES
 ------------------
@@ -88,8 +97,9 @@ Console Streaming:
 Player Events:
   - Login detection via Harmony patch on Player.PlayerEnterWorld()
   - Logoff detection via Harmony patch on PlayerManager.SwitchPlayerFromOnlineToOffline()
+  - Events include: player name, GUID, level, location, world time, player count
   - Auto-refresh player list when events occur
-  - Player count updated in real-time
+  - Player count and uptime updated in real-time
 
 Connection Management:
   - Multiple clients supported (up to MaxConnections)
@@ -173,6 +183,17 @@ v1.0.x - Phase 1 Refinements
   - Auto-refresh persistence via localStorage
   - Fixed console scrolling layout
   - Tag-based message color parsing ([CHAT], [AUDIT], [SYSTEM], etc.)
+
+v1.0.82 - Protocol & Display Enhancements
+  - Added dedicated HELLO command (initial server state with player list)
+  - Added dedicated PLAYERS command (player list refresh)
+  - Added STATUS command (lean polling response without player list)
+  - Display ACE Server version and build number in sidebar
+  - Display World Database Base and Patch versions in sidebar
+  - Real-time uptime updates on player login/logoff
+  - WorldTime included in player events for accurate uptime calculation
+  - Raw response logging when DebugMode enabled
+  - Optimized RCON protocol commands for efficiency
 
 DOCUMENTATION
 --------------

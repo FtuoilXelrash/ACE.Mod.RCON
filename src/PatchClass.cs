@@ -223,7 +223,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                     { "playerGuid", __instance.Guid.Full },
                     { "level", __instance.Level ?? 0 },
                     { "location", __instance.Location?.ToString() ?? "Unknown" },
-                    { "count", GetOnlinePlayerCount() }
+                    { "count", GetOnlinePlayerCount() },
+                    { "WorldTime", DateTime.UtcNow.ToString("O") }
                 };
 
                 RconLogBroadcaster.Instance.BroadcastPlayerEvent("login", playerData);
@@ -298,7 +299,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                     { "playerGuid", player.Guid.Full },
                     { "level", player.Level ?? 0 },
                     { "location", player.Location?.ToString() ?? "Unknown" },
-                    { "count", projectedCount }
+                    { "count", projectedCount },
+                    { "WorldTime", DateTime.UtcNow.ToString("O") }
                 };
 
                 RconLogBroadcaster.Instance.BroadcastPlayerEvent("logoff", playerData);

@@ -893,6 +893,21 @@ function handleLogMessage(response) {
 }
 
 /**
+ * Calculate uptime from a given world time (server startup time)
+ */
+function calculateUptime(worldTime) {
+    const now = new Date();
+    const uptimeTotalSeconds = Math.floor((now - worldTime) / 1000);
+
+    const days = Math.floor(uptimeTotalSeconds / 86400);
+    const hours = Math.floor((uptimeTotalSeconds % 86400) / 3600);
+    const minutes = Math.floor((uptimeTotalSeconds % 3600) / 60);
+    const seconds = uptimeTotalSeconds % 60;
+
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+/**
  * Handle player events (login/logoff)
  */
 function handlePlayerEvent(response) {
@@ -905,11 +920,23 @@ function handlePlayerEvent(response) {
         client.send('players', []).catch(err => console.error('[UI] Error auto-refreshing players:', err));
     }
 
-    // Update player count if data is available
-    if (response.Data && response.Data.count !== undefined) {
-        const playerEl = document.getElementById('player-count');
-        if (playerEl) {
-            playerEl.textContent = response.Data.count;
+    // Update player count and uptime if data is available
+    if (response.Data) {
+        if (response.Data.count !== undefined) {
+            const playerEl = document.getElementById('player-count');
+            if (playerEl) {
+                playerEl.textContent = response.Data.count;
+            }
+        }
+
+        // Update uptime from WorldTime if available
+        if (response.Data.WorldTime) {
+            const worldTime = new Date(response.Data.WorldTime);
+            const uptime = calculateUptime(worldTime);
+            const uptimeEl = document.getElementById('uptime');
+            if (uptimeEl) {
+                uptimeEl.textContent = uptime;
+            }
         }
     }
 }

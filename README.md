@@ -94,10 +94,16 @@ rcon reload
 
 All ACE console commands are available via RCON passthrough. The RCON server accepts ANY console command that works in the ACE server console and returns the command output.
 
+**Protocol Commands:**
+- `config` - Get client configuration and auth mode
+- `hello` - Get initial server state (status, version, player list, database info) on authentication
+- `status` - Get lean server status for periodic polling (no player list)
+- `players` - Get current player list and count
+
 **Common Examples:**
-- `status` - Server status, uptime, player count
-- `players` - List online players with details
-- `landblocks` - Show loaded landblock information
+- `acecommands` - Display available ACE commands
+- `listplayers` - List online players
+- `population` - Show player population info
 - `help` - Display available commands
 - Any other ACE console command (e.g., `world broadcast "message"`, `portal create`, etc.)
 
@@ -146,8 +152,10 @@ The RCON implementation uses Rust RCON protocol format but with ACE CommandManag
 ### Server Info Sidebar
 - Current server status
 - Online player count
-- Server uptime (days, hours, minutes, seconds)
-- Quick command buttons (Status, Players, Landblocks, Help)
+- Server uptime (days, hours, minutes, seconds) - updates on player login/logoff
+- ACE Server version and build number
+- World Database Base and Patch versions
+- Quick command buttons (ACE Commands, List Players, Population, Status, Hello)
 
 ## Building
 
@@ -172,8 +180,12 @@ dotnet build -c Release      # Release build
 ### Player Event Detection
 - **Login Detection**: Harmony patch on `Player.PlayerEnterWorld()`
 - **Logoff Detection**: Harmony patch on `PlayerManager.SwitchPlayerFromOnlineToOffline()`
-- **Broadcasting**: Player events broadcast to all connected clients with updated player count
+- **Broadcasting**: Player events broadcast to all connected clients with:
+  - Updated player count
+  - Player name, GUID, level, location
+  - Current world time for uptime calculation
 - **Auto-refresh**: Web client can automatically refresh player list on these events
+- **Real-time uptime**: Sidebar uptime updates whenever a player logs in/off
 
 ### Connection Management
 - **Authentication**: Single password-based auth per connection (matches RCON/WebRcon password)
