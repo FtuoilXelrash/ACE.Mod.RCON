@@ -399,6 +399,7 @@ Auth: {""Command"": ""auth"", ""Password"": ""your_password"", ""Identifier"": 1
     {
         var configData = new Dictionary<string, object>
         {
+            { "Version", RconConnection.ModVersion },
             { "RconEnabled", settings?.RconEnabled ?? true },
             { "WebRconEnabled", settings?.WebRconEnabled ?? true },
             { "MaxConnections", settings?.MaxConnections ?? 10 },

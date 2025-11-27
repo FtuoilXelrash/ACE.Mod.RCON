@@ -640,6 +640,15 @@ async function fetchClientConfig() {
             clientConfig = response.Data;
             console.log('[UI] Client config received:', clientConfig);
 
+            // Update version in footer
+            if (clientConfig.Version) {
+                const versionElement = document.getElementById('version');
+                if (versionElement) {
+                    versionElement.textContent = clientConfig.Version;
+                    console.log('[UI] Version updated to:', clientConfig.Version);
+                }
+            }
+
             // Update reconnect settings in client
             if (clientConfig.MaxReconnectAttempts && clientConfig.ReconnectDelayMs) {
                 client.setReconnectConfig(clientConfig.MaxReconnectAttempts, clientConfig.ReconnectDelayMs);

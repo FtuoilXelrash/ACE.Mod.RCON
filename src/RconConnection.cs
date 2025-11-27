@@ -12,6 +12,9 @@ public class RconConnection
     private byte[] receiveBuffer;
     private bool isConnected = true;
 
+    // Version read from Meta.json at startup
+    public static string ModVersion { get; set; } = "1.0.42";
+
     public int ConnectionId => connectionId;
     public bool IsAuthenticated { get; set; } = false;
 
@@ -34,7 +37,7 @@ public class RconConnection
         try
         {
             // Send welcome message to telnet client
-            var welcomeMsg = Encoding.UTF8.GetBytes("\r\nACE RCON Server v1.0.38\r\nSend JSON commands (one per line)\r\nExample: {\"Command\": \"auth\", \"Password\": \"your_password\", \"Identifier\": 1}\r\n\r\n");
+            var welcomeMsg = Encoding.UTF8.GetBytes($"\r\nACE RCON Server v{ModVersion}\r\nSend JSON commands (one per line)\r\nExample: {{\"Command\": \"auth\", \"Password\": \"your_password\", \"Identifier\": 1}}\r\n\r\n");
             await networkStream.WriteAsync(welcomeMsg, 0, welcomeMsg.Length, cancellationToken);
             await networkStream.FlushAsync(cancellationToken);
 
