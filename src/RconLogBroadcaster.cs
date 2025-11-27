@@ -11,6 +11,7 @@ public class RconLogBroadcaster
 
     private RconServer? rconServer;
     private RconHttpServer? httpServer;
+    private Settings? settings;
     private bool isInitialized = false;
 
     public static RconLogBroadcaster Instance
@@ -35,12 +36,13 @@ public class RconLogBroadcaster
     /// <summary>
     /// Initialize the broadcaster with references to the servers
     /// </summary>
-    public void Initialize(RconServer rconServer, RconHttpServer httpServer)
+    public void Initialize(RconServer rconServer, RconHttpServer httpServer, Settings settings)
     {
         lock (lockObj)
         {
             this.rconServer = rconServer;
             this.httpServer = httpServer;
+            this.settings = settings;
             this.isInitialized = true;
 
             ModManager.Log($"[RCON] Log broadcaster initialized");
@@ -105,6 +107,12 @@ public class RconLogBroadcaster
                 Command = eventType, // "login" or "logout"
                 Data = playerData
             };
+
+            if (settings?.DebugMode ?? false)
+            {
+                var json = JsonSerializer.Serialize(playerResponse);
+                ModManager.Log($"[RCON] Broadcasting player event: {json}");
+            }
 
             rconServer.BroadcastMessage(playerResponse);
             httpServer?.BroadcastMessage(playerResponse);

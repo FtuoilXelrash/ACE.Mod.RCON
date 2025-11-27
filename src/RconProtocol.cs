@@ -459,13 +459,21 @@ public static class RconProtocol
 
         helloData["OnlinePlayers"] = GetOnlinePlayersList();
 
-        return new RconResponse
+        var response = new RconResponse
         {
             Identifier = request.Identifier,
             Status = "success",
             Message = "Server hello",
             Data = helloData
         };
+
+        if (settings?.DebugMode ?? false)
+        {
+            var json = JsonSerializer.Serialize(response);
+            ModManager.Log($"[RCON] HELLO response: {json}");
+        }
+
+        return response;
     }
 
     /// <summary>
@@ -504,13 +512,21 @@ public static class RconProtocol
                 statusData["AceDatabasePatchVersion"] = "Unknown";
             }
 
-            return new RconResponse
+            var response = new RconResponse
             {
                 Identifier = request.Identifier,
                 Status = "success",
                 Message = "Server status",
                 Data = statusData
             };
+
+            if (settings?.DebugMode ?? false)
+            {
+                var json = JsonSerializer.Serialize(response);
+                ModManager.Log($"[RCON] STATUS response: {json}");
+            }
+
+            return response;
         }
         catch (Exception ex)
         {
@@ -539,13 +555,21 @@ public static class RconProtocol
             playersData["MaxPlayers"] = (int)ConfigManager.Config.Server.Network.MaximumAllowedSessions;
             playersData["OnlinePlayers"] = GetOnlinePlayersList();
 
-            return new RconResponse
+            var response = new RconResponse
             {
                 Identifier = request.Identifier,
                 Status = "success",
                 Message = "Player list",
                 Data = playersData
             };
+
+            if (settings?.DebugMode ?? false)
+            {
+                var json = JsonSerializer.Serialize(response);
+                ModManager.Log($"[RCON] PLAYERS response: {json}");
+            }
+
+            return response;
         }
         catch (Exception ex)
         {

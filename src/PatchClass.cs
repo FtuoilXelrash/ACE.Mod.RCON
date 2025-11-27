@@ -93,7 +93,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                     ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:9005/");
 
                     // Initialize the log broadcaster with server references
-                    RconLogBroadcaster.Instance.Initialize(rconServer, httpServer);
+                    RconLogBroadcaster.Instance.Initialize(rconServer, httpServer, Settings);
 
                     // Initialize WebSocket handler with HTTP server reference
                     RconWebSocketHandler.Initialize(httpServer);
@@ -103,7 +103,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                     ModManager.Log($"[RCON] Web RCON is disabled. Only TCP RCON available.");
 
                     // Still initialize broadcaster with TCP server only (no WebSocket server)
-                    RconLogBroadcaster.Instance.Initialize(rconServer, null!);
+                    RconLogBroadcaster.Instance.Initialize(rconServer, null!, Settings);
                 }
             }
             else
