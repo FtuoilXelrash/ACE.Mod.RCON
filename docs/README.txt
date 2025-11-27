@@ -12,7 +12,7 @@ QUICK START
 -----------
 1. Copy RCON.dll to your ACE mods directory
 2. Restart your ACE server (Settings.json will auto-generate)
-3. Open browser to: http://127.0.0.1:9005/
+3. Open browser to: http://127.0.0.1:9005/ (local) or http://<server-ip>:9005/ (remote)
 4. Enter your RCON password (default in Settings.json)
 5. Use Console, Players, and Configuration tabs
 
@@ -21,6 +21,13 @@ PORTS
 - TCP RCON: Port 9004 (RconEnabled setting)
 - Web RCON: Port 9005 (WebRconEnabled setting)
   Both can be controlled independently!
+
+NETWORK ACCESS
+--------------
+✓ Both TCP RCON (9004) and Web RCON (9005) are accessible from ALL network interfaces
+✓ Works locally via 127.0.0.1 AND remotely via any server IP address
+✓ No admin privileges required on the server
+✓ Firewall must allow inbound TCP on ports 9004 and 9005 for remote access
 
 SETTINGS.JSON
 -------------
@@ -103,10 +110,17 @@ rcon reload    - Reload Settings.json without restarting
 
 TROUBLESHOOTING
 ---------------
-Web client won't load?
+Web client won't load (local)?
   - Check http://127.0.0.1:9005/ in browser
   - Verify WebRconEnabled = true in Settings.json
   - Check firewall allows port 9005
+
+Web client won't load (remote)?
+  - Check http://<server-ip>:9005/ in browser
+  - Verify firewall allows inbound TCP on port 9005
+  - Test connectivity: telnet <server-ip> 9005
+  - Both servers bind to all interfaces (0.0.0.0) - no configuration needed
+  - No admin privileges required
 
 No console messages appearing?
   - Verify authentication succeeded
@@ -127,6 +141,12 @@ Connection keeps dropping?
   - Increase MaxReconnectAttempts
   - Increase ReconnectDelayMs for slow networks
   - Check ConnectionTimeoutSeconds isn't too low
+
+TCP RCON connection issues?
+  - Test with: telnet 127.0.0.1 9004 (local) or telnet <server-ip> 9004 (remote)
+  - Verify RconEnabled = true in Settings.json
+  - Check server firewall allows port 9004
+  - Works without admin privileges
 
 BUILDING
 --------

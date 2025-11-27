@@ -63,9 +63,11 @@ Edit `Settings.json`:
 
 ### Accessing the Web Client
 
-1. Open your browser to: `http://127.0.0.1:9005/`
+1. Open your browser to: `http://127.0.0.1:9005/` (local) or `http://<server-ip>:9005/` (remote)
 2. Enter your RCON password
 3. Use available commands: `status`, `players`, `landblocks`, `help`
+
+**Note:** Both TCP RCON (port 9004) and Web RCON (port 9005) accept connections from **all network interfaces** - accessible locally via 127.0.0.1 and remotely via any IP address the server is bound to. No admin privileges required.
 
 ### Server Console Commands
 
@@ -183,11 +185,18 @@ Player events (login/logoff) are automatically broadcast when:
 
 ## Troubleshooting
 
-**Web client won't connect:**
+**Web client won't connect (local):**
 - Verify WebRconEnabled = true in Settings.json
 - Check RconHttpServer is running (port 9005)
 - Check firewall allows port 9005
 - Verify browser can reach http://127.0.0.1:9005/
+
+**Web client won't connect (remote/external IP):**
+- Verify WebRconEnabled = true in Settings.json
+- Check firewall allows incoming connections on port 9005 (and port 9004 for TCP RCON)
+- Verify remote host can reach the server IP on those ports (use `telnet <server-ip> 9005` to test)
+- Both servers bind to all network interfaces (0.0.0.0) - no special configuration needed
+- No admin privileges required on the server
 
 **Player counts not updating:**
 - Check EnableLogging = true to see debug output
