@@ -8,7 +8,10 @@ RCON (Remote Console) mod for Asheron's Call Emulator (ACE) server. Provides rem
 - ✅ TCP RCON server on port 9004 (configurable)
 - ✅ WebSocket HTTP server on port 9005 (independently controllable)
 - ✅ Web-based RCON client interface with responsive design
-- ✅ Password-based authentication
+- ✅ Dual authentication modes:
+  - Rust-style: Password in WebSocket URL path or first TCP message
+  - ACE-style: JSON packet-based authentication with login landing page
+- ✅ Command passthrough to ACE CommandManager (execute ANY console command)
 - ✅ Server status monitoring (uptime, player count)
 - ✅ Online player list with character details
 - ✅ Loaded landblock information
@@ -38,6 +41,7 @@ Edit `Settings.json`:
   "RconPort": 9004,
   "RconPassword": "your_secure_password",
   "WebRconEnabled": true,
+  "UseAceAuthentication": false,
   "MaxConnections": 10,
   "ConnectionTimeoutSeconds": 300,
   "EnableLogging": false,
@@ -53,6 +57,9 @@ Edit `Settings.json`:
 - **RconPort**: TCP port for RCON server (default: 9004)
 - **RconPassword**: Password for authentication (change this!)
 - **WebRconEnabled**: Enable/disable Web RCON interface (WebSocket on port 9005) - can be disabled independently
+- **UseAceAuthentication**: Use ACE-style packet-based authentication instead of Rust-style URL-based auth (default: false)
+  - `false` (Rust-style): Password in WebSocket URL path (e.g., `ws://host:9005/password`) or first line of TCP connection
+  - `true` (ACE-style): Send `{"Command": "auth", "Password": "xxx"}` after connecting
 - **MaxConnections**: Maximum concurrent RCON connections (default: 10)
 - **ConnectionTimeoutSeconds**: Idle connection timeout in seconds (default: 300/5 minutes)
 - **EnableLogging**: Verbose logging of RCON operations to server console
@@ -63,9 +70,16 @@ Edit `Settings.json`:
 
 ### Accessing the Web Client
 
+**Rust-style Authentication (default, UseAceAuthentication=false):**
 1. Open your browser to: `http://127.0.0.1:9005/` (local) or `http://<server-ip>:9005/` (remote)
-2. Enter your RCON password
-3. Use available commands: `status`, `players`, `landblocks`, `help`
+2. The web client automatically authenticates using the password in the URL path
+3. If no saved password, the browser will prompt or you can manually connect to `ws://host:9005/your_password`
+
+**ACE-style Authentication (UseAceAuthentication=true):**
+1. Open your browser to: `http://127.0.0.1:9005/` (local) or `http://<server-ip>:9005/` (remote)
+2. A login landing page will appear
+3. Enter your RCON password and click "Connect"
+4. Web client will authenticate via JSON packet
 
 **Note:** Both TCP RCON (port 9004) and Web RCON (port 9005) accept connections from **all network interfaces** - accessible locally via 127.0.0.1 and remotely via any IP address the server is bound to. No admin privileges required.
 
@@ -78,12 +92,17 @@ rcon reload
 
 ## Available Commands
 
-| Command | Description |
-|---------|-------------|
-| `status` | Server status, uptime, player count |
-| `players` | List online players with details |
-| `landblocks` | Show loaded landblock information |
-| `help` | Display available commands |
+All ACE console commands are available via RCON passthrough. The RCON server accepts ANY console command that works in the ACE server console and returns the command output.
+
+**Common Examples:**
+- `status` - Server status, uptime, player count
+- `players` - List online players with details
+- `landblocks` - Show loaded landblock information
+- `help` - Display available commands
+- Any other ACE console command (e.g., `world broadcast "message"`, `portal create`, etc.)
+
+**Command Passthrough:**
+The RCON implementation uses Rust RCON protocol format but with ACE CommandManager for command execution. Any command that can be executed in the ACE server console can be executed via RCON.
 
 ## Web Client Features
 

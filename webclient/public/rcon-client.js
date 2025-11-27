@@ -14,7 +14,7 @@ class RconClient {
     constructor(host = null, port = null) {
         // Use current window location if not specified
         this.host = host || window.location.hostname;
-        this.port = port || window.location.port || 2948;
+        this.port = port || 9005;  // Default to RCON WebSocket port
         this.ws = null;
         this.isConnected = false;
         this.isAuthenticated = false;
@@ -24,6 +24,7 @@ class RconClient {
         this.reconnectDelay = 15000;  // Will be updated from server config
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 42;  // Will be updated from server config
+        this.password = null;  // For Rust-style URL auth
     }
 
     /**
@@ -36,14 +37,28 @@ class RconClient {
     }
 
     /**
+     * Set password for Rust-style URL authentication
+     */
+    setPassword(password) {
+        this.password = password;
+        console.log('[RconClient] Password set for URL authentication');
+    }
+
+    /**
      * Connect to RCON server
      * @returns {Promise} Resolves when connected
      */
     connect() {
         return new Promise((resolve, reject) => {
             try {
-                const wsUrl = `ws://${this.host}:${this.port}/rcon`;
-                console.log(`[RconClient] Connecting to ${wsUrl}`);
+                // For Rust-style auth, include password in URL path
+                let wsUrl = `ws://${this.host}:${this.port}`;
+                if (this.password) {
+                    wsUrl += `/${this.password}`;
+                } else {
+                    wsUrl += `/rcon`;  // Default path for ACE auth mode
+                }
+                console.log(`[RconClient] Connecting to ${wsUrl.replace(this.password || '', '***')}`);
 
                 this.ws = new WebSocket(wsUrl);
 

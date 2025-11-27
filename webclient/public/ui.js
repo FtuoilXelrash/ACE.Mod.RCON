@@ -8,6 +8,8 @@ let commandHistory = [];
 let historyIndex = 0;
 let autoRefreshPlayers = true;
 let clientConfig = null;
+let useAceAuthentication = false; // Will be set from server config
+let userSelectedAuthMode = null; // Track which auth mode user selected on login page
 
 /**
  * Initialize the UI and WebSocket client
@@ -19,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     client = new RconClient();
 
     // Set up event listeners
+    client.on('server-config', onServerConfig);
     client.on('connected', onConnected);
     client.on('authenticated', onAuthenticated);
     client.on('response', onResponse);
@@ -62,26 +65,127 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize color style element and restore saved colors
     createStyleElement();
 
-    // Auto-connect on load
-    setTimeout(() => {
-        console.log('[UI] Auto-connecting to RCON server...');
-        connectToServer();
-    }, 500);
+    // Show login page on load (no auto-connect - user must login first)
+    showLoginPage();
+    updateAuthModeUI(); // Initialize UI based on default auth mode (Rust)
 });
+
+/**
+ * Update login page UI based on selected auth mode
+ */
+function updateAuthModeUI() {
+    const authModeSelect = document.getElementById('login-auth-mode');
+    const infoText = document.getElementById('login-info-text');
+    const usernameGroup = document.getElementById('login-username-group');
+
+    if (authModeSelect.value === 'rust') {
+        infoText.textContent = 'Password will be sent in WebSocket URL path';
+        usernameGroup.style.display = 'none';
+    } else {
+        infoText.textContent = 'Username and password will be sent via JSON authentication command';
+        usernameGroup.style.display = 'flex';
+    }
+}
+
+/**
+ * Handle login form submission
+ */
+function handleLogin(event) {
+    event.preventDefault();
+    const password = document.getElementById('login-password').value;
+    const username = document.getElementById('login-username')?.value || '';
+    const authModeSelect = document.getElementById('login-auth-mode');
+    const loginBtn = document.getElementById('login-btn');
+    const loginError = document.getElementById('login-error');
+
+    loginBtn.disabled = true;
+    loginError.style.display = 'none';
+
+    userSelectedAuthMode = authModeSelect.value;
+    console.log('[UI] User selected auth mode:', userSelectedAuthMode);
+
+    // If user selected Rust-style, set password on client before connecting
+    if (userSelectedAuthMode === 'rust') {
+        client.setPassword(password);
+        // Save password to localStorage for future sessions
+        localStorage.setItem('rconPassword', password);
+    }
+
+    // Connect to server
+    connectToServer().then(() => {
+        // After connecting, handle authentication based on mode
+        if (userSelectedAuthMode === 'ace') {
+            // ACE-style: use authenticate method with password (username is optional/future use)
+            console.log('[UI] Sending ACE-style auth command...');
+            client.authenticate(password).catch(err => {
+                console.error('[UI] Auth failed:', err);
+                loginError.textContent = err.message;
+                loginError.style.display = 'block';
+                loginBtn.disabled = false;
+            });
+        }
+        // For Rust-style, password is in URL so connection is already authenticated
+        // onConnected() will handle proceeding to authenticated state
+    }).catch(err => {
+        console.error('[UI] Connection failed:', err);
+        loginError.textContent = err.message;
+        loginError.style.display = 'block';
+        loginBtn.disabled = false;
+    });
+}
+
+/**
+ * Show the login page
+ */
+function showLoginPage() {
+    console.log('[UI] Showing login page');
+    const loginPage = document.getElementById('login-page');
+    const mainContainer = document.getElementById('main-container');
+
+    if (loginPage) loginPage.style.display = 'flex';
+    if (mainContainer) mainContainer.style.display = 'none';
+
+    // Focus password input
+    setTimeout(() => {
+        const passwordInput = document.getElementById('login-password');
+        if (passwordInput) passwordInput.focus();
+    }, 100);
+}
+
+/**
+ * Hide the login page and show main UI
+ */
+function hideLoginPage() {
+    console.log('[UI] Hiding login page');
+    const loginPage = document.getElementById('login-page');
+    const mainContainer = document.getElementById('main-container');
+
+    if (loginPage) loginPage.style.display = 'none';
+    if (mainContainer) mainContainer.style.display = 'flex';
+}
+
+/**
+ * Handle server configuration response
+ * (Called after connection, not needed for initial login page display)
+ */
+function onServerConfig(config) {
+    console.log('[UI] Server config received:', config);
+    useAceAuthentication = config.UseAceAuthentication || false;
+    console.log('[UI] UseAceAuthentication:', useAceAuthentication);
+}
 
 /**
  * Connect to RCON server
  */
 async function connectToServer() {
     try {
-        console.log('[UI] Connecting to server...');
-        addOutput('Connecting to RCON server...', 'info-message');
-
+        console.log('[UI] Connecting to server with auth mode:', userSelectedAuthMode);
         await client.connect();
         console.log('[UI] Connected to server');
+        return Promise.resolve();
     } catch (error) {
         console.error('[UI] Connection failed:', error);
-        addOutput(`Connection failed: ${error.message}`, 'error-message');
+        throw error;
     }
 }
 
@@ -89,25 +193,43 @@ async function connectToServer() {
  * Called when WebSocket connects
  */
 function onConnected() {
-    console.log('[UI] WebSocket connected');
+    console.log('[UI] WebSocket connected, auth mode:', userSelectedAuthMode);
     updateStatus('connected', 'Connected - Authenticating...');
-    addOutput('Connected to RCON server. Please enter password to authenticate.', 'info-message');
 
-    // Show password prompt
-    const commandInput = document.getElementById('command-input');
-    if (commandInput) {
-        commandInput.placeholder = 'Enter password and press Enter...';
-        commandInput.disabled = false;
-        commandInput.focus();
+    if (userSelectedAuthMode === 'rust') {
+        // For Rust-style auth, password is in URL so connection is immediately authenticated
+        // We mark as authenticated immediately (server already validated in URL)
+        console.log('[UI] Connected with Rust-style auth (password in URL) - immediately authenticated');
+        client.isAuthenticated = true;
+        handleAuthenticationComplete();
+    } else {
+        // For ACE-style, we're waiting for auth command response
+        console.log('[UI] Connected, waiting for ACE auth...');
+        addOutput('Connected to RCON server. Sending authentication...', 'info-message');
     }
 }
 
 /**
- * Called when authenticated
+ * Called when authenticated (either via Rust-style connection or ACE auth command)
  */
 function onAuthenticated(authResponse) {
     console.log('[UI] Authenticated');
+    handleAuthenticationComplete(authResponse);
+}
+
+/**
+ * Handle successful authentication (common for both auth modes)
+ */
+function handleAuthenticationComplete(authResponse) {
     updateStatus('authenticated', 'Authenticated');
+
+    // Hide login page
+    hideLoginPage();
+
+    // Re-enable login button for future use
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) loginBtn.disabled = false;
+
     addOutput('Successfully authenticated!', 'success-message');
 
     // Update sidebar with status data from auth response if available
@@ -115,8 +237,10 @@ function onAuthenticated(authResponse) {
         updateSidebarPanel(authResponse);
     }
 
-    // Fetch client configuration from server
-    fetchClientConfig();
+    // TODO: Fetch client configuration from server
+    // setTimeout(() => {
+    //     fetchClientConfig();
+    // }, 500);
 
     // Enable UI
     enableCommands();
@@ -124,7 +248,7 @@ function onAuthenticated(authResponse) {
     // Update input placeholder
     const commandInput = document.getElementById('command-input');
     if (commandInput) {
-        commandInput.placeholder = 'Enter RCON command... (e.g., status, players, help)';
+        commandInput.placeholder = 'Enter RCON command...';
         commandInput.value = '';
         commandInput.focus();
     }
@@ -343,19 +467,6 @@ async function sendCommand() {
         commandHistory.push(command);
         historyIndex = commandHistory.length;
     }
-}
-
-/**
- * Send quick command
- */
-async function quickCommand(cmd) {
-    const commandInput = document.getElementById('command-input');
-    if (commandInput) {
-        commandInput.value = cmd;
-    }
-
-    // Execute it
-    await sendCommand();
 }
 
 /**

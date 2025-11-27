@@ -9,7 +9,37 @@
     <meta name="theme-color" content="#1a1a1a">
 </head>
 <body>
-    <div class="container">
+    <!-- Login Landing Page (always shown first) -->
+    <div id="login-page" class="login-page">
+        <div class="login-container">
+            <div class="login-box">
+                <h1>ACE RCON Web Client</h1>
+                <p>Enter Your Credentials</p>
+                <form onsubmit="handleLogin(event)">
+                    <div class="login-form-group">
+                        <label for="login-auth-mode">Authentication Mode:</label>
+                        <select id="login-auth-mode" class="auth-mode-select" onchange="updateAuthModeUI()">
+                            <option value="rust">Rust-style (URL Password)</option>
+                            <option value="ace">ACE-style (Username & Password)</option>
+                        </select>
+                    </div>
+                    <div class="login-form-group" id="login-username-group" style="display: none;">
+                        <input type="text" id="login-username" placeholder="Enter Username" autocomplete="username">
+                    </div>
+                    <div class="login-form-group">
+                        <input type="password" id="login-password" placeholder="Enter RCON Password" required autofocus>
+                    </div>
+                    <button type="submit" id="login-btn">Connect</button>
+                </form>
+                <div id="login-error" class="login-error" style="display: none;"></div>
+                <div id="login-info" class="login-info">
+                    <small id="login-info-text">Password will be sent in WebSocket URL path</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="main-container" style="display: none;">
         <header>
             <h1>ACE RCON Web Client</h1>
             <div id="status" class="status disconnected">
@@ -179,14 +209,6 @@
                         <p>Players: <span id="player-count">0</span></p>
                         <p>Uptime: <span id="uptime">0s</span></p>
                     </div>
-                </section>
-
-                <section class="quick-commands">
-                    <h3>Quick Commands</h3>
-                    <button onclick="quickCommand('status')" disabled>Status</button>
-                    <button onclick="quickCommand('players')" disabled>Player List</button>
-                    <button onclick="quickCommand('landblocks')" disabled>Landblocks</button>
-                    <button onclick="quickCommand('help')" disabled>Help</button>
                 </section>
                 </aside>
             </div>

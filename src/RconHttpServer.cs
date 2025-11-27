@@ -147,11 +147,11 @@ public class RconHttpServer
                 if (settings.EnableLogging)
                     ModManager.Log($"[RCON] HTTP {request.Method} {request.Path}");
 
-                // Check if this is a WebSocket upgrade request on /rcon path
-                if (request.IsWebSocketUpgrade && request.Path.Equals("/rcon"))
+                // Check if this is a WebSocket upgrade request (on any path)
+                if (request.IsWebSocketUpgrade)
                 {
                     if (settings.EnableLogging)
-                        ModManager.Log($"[RCON] WebSocket upgrade request detected on /rcon");
+                        ModManager.Log($"[RCON] WebSocket upgrade request detected on {request.Path}");
 
                     await HandleWebSocketAsync(stream, request, cancellationToken);
                 }
@@ -270,6 +270,46 @@ public class RconHttpServer
 
             // Create pseudo-connection for this WebSocket
             var wsConnection = new WebSocketRconConnection(webSocket, settings);
+
+            // Handle Rust-style URL-based authentication if not using ACE auth
+            if (!settings.UseAceAuthentication)
+            {
+                // Extract password from URL path (format: /password)
+                // Path could be /rcon or /password if Rust-style auth
+                string? password = null;
+                string path = request.Path;
+
+                if (path.Length > 1 && path != "/rcon")
+                {
+                    // Password is the path without leading slash
+                    password = path.TrimStart('/');
+                }
+
+                ModManager.Log($"[RCON] WebSocket Rust-style auth: path='{path}', extracted_password='{password ?? "(null)"}', expected_password='{settings.RconPassword}'");
+
+                // Validate password
+                if (!string.IsNullOrEmpty(password) && password == settings.RconPassword)
+                {
+                    wsConnection.IsAuthenticated = true;
+                    SetWebSocketAuthenticated(webSocket, true);
+                    ModManager.Log($"[RCON] WebSocket authenticated via URL password");
+                }
+                else
+                {
+                    // Send error response and close
+                    var errorResponse = new RconResponse
+                    {
+                        Identifier = 0,
+                        Status = "error",
+                        Message = "Invalid password"
+                    };
+                    ModManager.Log($"[RCON] WebSocket Rust-style auth FAILED: sending error and closing");
+                    await SendResponseAsync(webSocket, errorResponse);
+                    await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Invalid password", CancellationToken.None);
+                    UnregisterWebSocket(webSocket);
+                    return;
+                }
+            }
 
             // Handle WebSocket in background
             await HandleWebSocketConnectionAsync(webSocket, wsConnection, cancellationToken);

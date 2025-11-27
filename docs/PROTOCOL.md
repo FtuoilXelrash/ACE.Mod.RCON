@@ -4,6 +4,39 @@
 
 The RCON protocol uses JSON for message encoding over both TCP (persistent connections) and WebSocket (HTTP) transports. All messages follow a request/response pattern with an identifier for correlation.
 
+## Authentication Modes
+
+The RCON server supports two authentication modes, configurable via `UseAceAuthentication` setting:
+
+### Rust-style Authentication (UseAceAuthentication=false, default)
+
+Password is embedded in the connection path or sent as the first message.
+
+**WebSocket:**
+```
+ws://host:9005/password
+```
+The password is part of the URL path. Connection is authenticated immediately upon successful password validation.
+
+**TCP:**
+First message must be the plain-text password (not JSON). After server validates it, connection is authenticated for subsequent JSON commands.
+
+### ACE-style Authentication (UseAceAuthentication=true)
+
+Password is sent via JSON authentication command after connecting.
+
+**WebSocket & TCP:**
+After connecting, send auth command:
+```json
+{
+  "Command": "auth",
+  "Password": "your_password",
+  "Identifier": 1
+}
+```
+
+Server responds with authentication status. All other commands must wait for successful authentication.
+
 ## Message Format
 
 ### Request
@@ -289,6 +322,41 @@ All commands except `auth` require authentication.
 }
 ```
 
+## Command Passthrough
+
+All ACE console commands are available via RCON using the command passthrough feature. The RCON server accepts ANY console command that works in the ACE server console.
+
+**Generic Command Format:**
+```json
+{
+  "Command": "command_name",
+  "Args": ["arg1", "arg2"],
+  "Identifier": 1
+}
+```
+
+**Example: Execute "world broadcast"**
+```json
+{
+  "Command": "world",
+  "Args": ["broadcast", "Hello from RCON"],
+  "Identifier": 1
+}
+```
+
+**Response:**
+```json
+{
+  "Identifier": 1,
+  "Status": "success",
+  "Message": "[Command output from ACE server]",
+  "Type": "Generic",
+  "Debug": false
+}
+```
+
+The `Message` field contains the console output from executing the command via ACE's CommandManager. Any console output written during command execution is captured and returned in the response.
+
 ## Transport Details
 
 ### TCP (Port 9004)
@@ -306,7 +374,17 @@ All commands except `auth` require authentication.
 
 ### WebSocket (Port 9005)
 
-- HTTP upgrade to WebSocket at `/rcon` endpoint
+**Rust-style Authentication (UseAceAuthentication=false):**
+- HTTP upgrade to WebSocket at path containing password: `ws://host:9005/password`
+- Password is extracted from URL path and validated immediately
+- Connection is authenticated upon successful password validation
+
+**ACE-style Authentication (UseAceAuthentication=true):**
+- HTTP upgrade to WebSocket at `/rcon` endpoint: `ws://host:9005/rcon`
+- Password must be sent via auth command after connecting
+- Connection waits for auth command before accepting other commands
+
+**General Details:**
 - One message per WebSocket frame
 - Binary frame type: Text (UTF-8 encoded JSON)
 - Idle connections allowed indefinitely

@@ -45,16 +45,28 @@ public static class RconProtocol
     }
 
     /// <summary>
-    /// Handle incoming RCON command
+    /// Handle incoming RCON command - Rust-style passthrough
+    /// Supports both Rust-style URL auth and ACE packet-based auth
     /// </summary>
     public static async Task<RconResponse> HandleCommandAsync(RconRequest request, RconConnection connection, Settings? settings = null)
     {
-        ModManager.Log($"[RCON] Command: {request.Command}, IsAuthenticated: {connection.IsAuthenticated}");
+        bool useAceAuth = settings?.UseAceAuthentication ?? false;
+        string command = request.Command ?? request.Message ?? "";
 
-        // If not authenticated, require auth command
-        if (!connection.IsAuthenticated)
+        if (settings?.EnableLogging ?? false)
+            ModManager.Log($"[RCON] Command: {command}, IsAuthenticated: {connection.IsAuthenticated}, UseAceAuth: {useAceAuth}");
+
+        // Allow config request without authentication (for web client to detect auth mode)
+        if (command == "config")
         {
-            if (request.Command != "auth")
+            return SetDebugFlag(HandleConfig(request, settings), settings);
+        }
+
+        // Handle authentication if using ACE auth mode
+        if (useAceAuth && !connection.IsAuthenticated)
+        {
+            // In ACE auth mode, only auth command is allowed before authentication
+            if (command != "auth")
             {
                 var errorResponse = new RconResponse
                 {
@@ -66,34 +78,32 @@ public static class RconProtocol
             }
 
             // Handle authentication
-            var authResponse = await HandleAuthAsync(request, connection);
-            ModManager.Log($"[RCON] After auth attempt - IsAuthenticated: {connection.IsAuthenticated}");
+            var authResponse = await HandleAuthAsync(request, connection, settings);
             return SetDebugFlag(authResponse, settings);
         }
 
-        // Handle authenticated commands
-        var response = request.Command switch
+        // If using Rust-style URL auth and not authenticated, reject
+        if (!useAceAuth && !connection.IsAuthenticated)
         {
-            "status" => HandleStatus(request),
-            "players" => HandlePlayers(request),
-            "landblocks" => HandleLandblocks(request),
-            "config" => HandleConfig(request, settings),
-            "help" => HandleHelp(request),
-            _ => new RconResponse
+            var errorResponse = new RconResponse
             {
                 Identifier = request.Identifier,
                 Status = "error",
-                Message = $"Unknown command: {request.Command}. Type 'help' for available commands."
-            }
-        };
+                Message = "Authentication required. Connection must include password in URL."
+            };
+            return SetDebugFlag(errorResponse, settings);
+        }
+
+        // Connection is authenticated - execute the command via ACE CommandManager (passthrough style)
+        var response = await ExecuteAceConsoleCommandAsync(request, command, settings);
 
         return SetDebugFlag(response, settings);
     }
 
     /// <summary>
-    /// Handle authentication request
+    /// Handle authentication request (ACE auth mode)
     /// </summary>
-    private static async Task<RconResponse> HandleAuthAsync(RconRequest request, RconConnection connection)
+    private static async Task<RconResponse> HandleAuthAsync(RconRequest request, RconConnection connection, Settings? settings = null)
     {
         if (string.IsNullOrEmpty(request.Password))
         {
@@ -134,123 +144,107 @@ public static class RconProtocol
     }
 
     /// <summary>
-    /// Handle status command
+    /// Execute any ACE console command via CommandManager (passthrough style)
+    /// This replaces all hardcoded command handlers
     /// </summary>
-    private static RconResponse HandleStatus(RconRequest request)
+    private static Task<RconResponse> ExecuteAceConsoleCommandAsync(RconRequest request, string commandText, Settings? settings)
     {
         try
         {
-            var statusData = GetServerStatus();
-            ModManager.Log($"[RCON] Status data: Players={statusData["CurrentPlayers"]}, Uptime={statusData["Uptime"]}, Status={statusData["Status"]}", ModManager.LogLevel.Info);
-
-            return new RconResponse
+            if (string.IsNullOrWhiteSpace(commandText))
             {
-                Identifier = request.Identifier,
-                Status = "success",
-                Message = "Server status retrieved",
-                Data = statusData
-            };
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[RCON] Status error: {ex.Message}", ModManager.LogLevel.Error);
-            return new RconResponse
-            {
-                Identifier = request.Identifier,
-                Status = "error",
-                Message = $"Error getting status: {ex.Message}"
-            };
-        }
-    }
-
-    /// <summary>
-    /// Handle players command - get online player list
-    /// </summary>
-    private static RconResponse HandlePlayers(RconRequest request)
-    {
-        try
-        {
-            var players = GetOnlinePlayersList();
-            ModManager.Log($"[RCON] Players data: count={players.Count}", ModManager.LogLevel.Info);
-
-            return new RconResponse
-            {
-                Identifier = request.Identifier,
-                Status = "success",
-                Message = "Player list retrieved",
-                Data = new Dictionary<string, object>
+                return Task.FromResult(new RconResponse
                 {
-                    { "players", players },
-                    { "count", players.Count }
-                }
-            };
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[RCON] Players error: {ex.Message}", ModManager.LogLevel.Error);
-            return new RconResponse
-            {
-                Identifier = request.Identifier,
-                Status = "error",
-                Message = $"Error getting players: {ex.Message}"
-            };
-        }
-    }
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = "No command specified"
+                });
+            }
 
-    /// <summary>
-    /// Handle landblocks command - get loaded landblock info
-    /// </summary>
-    private static RconResponse HandleLandblocks(RconRequest request)
-    {
-        try
-        {
-            var landblocks = GetLandblockInfo();
-            ModManager.Log($"[RCON] Landblocks data: count={landblocks.Count}", ModManager.LogLevel.Info);
+            if (settings?.EnableLogging ?? false)
+                ModManager.Log($"[RCON] Executing command: {commandText}", ModManager.LogLevel.Info);
 
-            return new RconResponse
+            // Capture console output
+            var outputCapture = new System.IO.StringWriter();
+            var originalOut = System.Console.Out;
+
+            try
             {
-                Identifier = request.Identifier,
-                Status = "success",
-                Message = "Landblock info retrieved",
-                Data = new Dictionary<string, object>
+                // Redirect Console.Out to capture output
+                System.Console.SetOut(outputCapture);
+
+                // Parse the command using ACE's CommandManager
+                string command = "";
+                string[] parameters = System.Array.Empty<string>();
+                CommandManager.ParseCommand(commandText, out command, out parameters);
+
+                // Get the command handler
+                var handlerResponse = CommandManager.GetCommandHandler(null, command, parameters, out var commandInfo);
+
+                if (handlerResponse == CommandHandlerResponse.Ok)
                 {
-                    { "landblocks", landblocks },
-                    { "count", landblocks.Count }
+                    // Invoke the command handler
+                    ((CommandHandler)commandInfo.Handler).Invoke(null, parameters);
+
+                    // Get captured output
+                    string output = outputCapture.ToString().Trim();
+
+                    if (settings?.EnableLogging ?? false)
+                        ModManager.Log($"[RCON] Command executed successfully, output length: {output.Length}", ModManager.LogLevel.Info);
+
+                    return Task.FromResult(new RconResponse
+                    {
+                        Identifier = request.Identifier,
+                        Status = "success",
+                        Message = output,
+                        Type = "Generic"
+                    });
                 }
-            };
+                else
+                {
+                    // Command handler not found or validation failed
+                    string errorMsg = $"Command failed: {handlerResponse}";
+
+                    if (settings?.EnableLogging ?? false)
+                        ModManager.Log($"[RCON] Command failed: {errorMsg}", ModManager.LogLevel.Warn);
+
+                    return Task.FromResult(new RconResponse
+                    {
+                        Identifier = request.Identifier,
+                        Status = "error",
+                        Message = errorMsg,
+                        Type = "Error"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[RCON] ERROR executing command: {ex.Message}", ModManager.LogLevel.Error);
+                return Task.FromResult(new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = $"Error executing command: {ex.Message}",
+                    Type = "Error"
+                });
+            }
+            finally
+            {
+                // Restore original Console output
+                System.Console.SetOut(originalOut);
+            }
         }
         catch (Exception ex)
         {
-            ModManager.Log($"[RCON] Landblocks error: {ex.Message}", ModManager.LogLevel.Error);
-            return new RconResponse
+            ModManager.Log($"[RCON] Unexpected error: {ex.Message}", ModManager.LogLevel.Error);
+            return Task.FromResult(new RconResponse
             {
                 Identifier = request.Identifier,
                 Status = "error",
-                Message = $"Error getting landblocks: {ex.Message}"
-            };
+                Message = $"Internal server error: {ex.Message}",
+                Type = "Error"
+            });
         }
-    }
-
-    /// <summary>
-    /// Handle help command
-    /// </summary>
-    private static RconResponse HandleHelp(RconRequest request)
-    {
-        var helpText = @"Available RCON Commands:
-  status    - Get server status information
-  players   - Get list of online players
-  landblocks - Get loaded landblock information
-  help      - Show this help message
-
-Use: {""Command"": ""command_name"", ""Identifier"": 1}
-Auth: {""Command"": ""auth"", ""Password"": ""your_password"", ""Identifier"": 1}";
-
-        return new RconResponse
-        {
-            Identifier = request.Identifier,
-            Status = "success",
-            Message = helpText
-        };
     }
 
     /// <summary>
@@ -408,7 +402,8 @@ Auth: {""Command"": ""auth"", ""Password"": ""your_password"", ""Identifier"": 1
             { "DebugMode", settings?.DebugMode ?? false },
             { "AutoRefreshPlayers", settings?.AutoRefreshPlayers ?? true },
             { "MaxReconnectAttempts", settings?.MaxReconnectAttempts ?? 42 },
-            { "ReconnectDelayMs", settings?.ReconnectDelayMs ?? 15000 }
+            { "ReconnectDelayMs", settings?.ReconnectDelayMs ?? 15000 },
+            { "UseAceAuthentication", settings?.UseAceAuthentication ?? false }
         };
 
         return new RconResponse

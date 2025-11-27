@@ -33,13 +33,25 @@ public class RconConnection
     {
         using var clientSocket = this.clientSocket;
         var networkStream = new NetworkStream(clientSocket, ownsSocket: true);
+        bool firstMessage = true;
+        bool useAceAuth = settings.UseAceAuthentication;
 
         try
         {
-            // Send welcome message to telnet client
-            var welcomeMsg = Encoding.UTF8.GetBytes($"\r\nACE RCON Server v{ModVersion}\r\nSend JSON commands (one per line)\r\nExample: {{\"Command\": \"auth\", \"Password\": \"your_password\", \"Identifier\": 1}}\r\n\r\n");
-            await networkStream.WriteAsync(welcomeMsg, 0, welcomeMsg.Length, cancellationToken);
-            await networkStream.FlushAsync(cancellationToken);
+            // Send welcome message only in ACE auth mode
+            if (useAceAuth)
+            {
+                var welcomeMsg = Encoding.UTF8.GetBytes($"\r\nACE RCON Server v{ModVersion}\r\nSend password first:\r\nExample: {{\"Command\": \"auth\", \"Password\": \"your_password\", \"Identifier\": 1}}\r\n\r\n");
+                await networkStream.WriteAsync(welcomeMsg, 0, welcomeMsg.Length, cancellationToken);
+                await networkStream.FlushAsync(cancellationToken);
+            }
+            else
+            {
+                // Rust-style: first message must be password (plain text)
+                var welcomeMsg = Encoding.UTF8.GetBytes($"\r\nACE RCON Server v{ModVersion}\r\nRust-style authentication\r\nSend password on first line, then JSON commands\r\n");
+                await networkStream.WriteAsync(welcomeMsg, 0, welcomeMsg.Length, cancellationToken);
+                await networkStream.FlushAsync(cancellationToken);
+            }
 
             while (isConnected && !cancellationToken.IsCancellationRequested)
             {
@@ -56,6 +68,42 @@ public class RconConnection
 
                     if (settings.EnableLogging)
                         ModManager.Log($"[RCON] Connection {connectionId} received: {message}");
+
+                    // Handle Rust-style password auth on first message
+                    if (firstMessage && !useAceAuth)
+                    {
+                        firstMessage = false;
+                        // First message in Rust-style is plain password
+                        bool passwordMatch = message == settings.RconPassword;
+
+                        if (passwordMatch)
+                        {
+                            IsAuthenticated = true;
+                            var authResponse = new RconResponse
+                            {
+                                Identifier = 0,
+                                Status = "authenticated",
+                                Message = "Authentication successful"
+                            };
+                            await SendMessageAsync(authResponse, networkStream, cancellationToken);
+                            if (settings.EnableLogging)
+                                ModManager.Log($"[RCON] Connection {connectionId} authenticated via Rust-style password");
+                        }
+                        else
+                        {
+                            var authResponse = new RconResponse
+                            {
+                                Identifier = 0,
+                                Status = "error",
+                                Message = "Invalid password"
+                            };
+                            await SendMessageAsync(authResponse, networkStream, cancellationToken);
+                            break; // Close connection on auth failure
+                        }
+                        continue; // Don't process password as command
+                    }
+
+                    firstMessage = false;
 
                     // Parse and handle the message
                     await HandleMessageAsync(message, networkStream, cancellationToken);
@@ -279,17 +327,21 @@ public class RconConnection
 
 /// <summary>
 /// RCON Request message structure
+/// Supports both ACE-style (Command) and Rust-style (Message) formats
 /// </summary>
 public class RconRequest
 {
-    public string? Command { get; set; }
+    public string? Command { get; set; }  // ACE style: command name
+    public string? Message { get; set; } // Rust style: raw command text
     public string? Password { get; set; }
     public List<string>? Args { get; set; }
     public int Identifier { get; set; }
+    public string? Name { get; set; } // Rust RCON format: client name
 }
 
 /// <summary>
 /// RCON Response message structure
+/// Matches Rust RCON response format
 /// </summary>
 public class RconResponse
 {
@@ -299,5 +351,7 @@ public class RconResponse
     public Dictionary<string, object>? Data { get; set; }
     public string? Error { get; set; }
     public bool Debug { get; set; } = false;
-    public string? Command { get; set; } // For broadcast events like "log", "player_event", "status_update"
+    public string? Command { get; set; } // For broadcast events
+    public string? Type { get; set; } = "Generic"; // Generic, Error, Log, Warning, Chat
+    public string? Stacktrace { get; set; } = ""; // Error details
 }

@@ -427,4 +427,12 @@ public class Settings
     /// Default: 15000 (15 seconds)
     /// </summary>
     public int ReconnectDelayMs { get; set; } = 15000;
+
+    /// <summary>
+    /// Use ACE-style packet-based authentication instead of Rust-style URL-based authentication
+    /// Default: false (Rust-style URL auth: ws://server:port/password)
+    /// Set to true for ACE-style auth: password sent in first packet {"Command": "auth", "Password": "xxx"}
+    /// When true, web client will show login landing page
+    /// </summary>
+    public bool UseAceAuthentication { get; set; } = false;
 }
