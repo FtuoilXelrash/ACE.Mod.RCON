@@ -55,31 +55,64 @@
                 <div style="flex: 1 1 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
                     <!-- Console Tab -->
                     <section id="console-tab" class="tab-content active">
-                            <div id="output" class="output">
-                                <div class="info-message">
-                                    Welcome to ACE RCON Web Client<br>
-                                    Connecting to server...
-                                </div>
+                        <div id="output" class="output">
+                            <div class="info-message">
+                                Welcome to ACE RCON Web Client<br>
+                                Connecting to server...
                             </div>
-                        </section>
+                        </div>
+
+                        <!-- Input Areas (inside Console tab only) -->
+                        <div class="input-area">
+                            <label style="color: #888; font-size: 12px; white-space: nowrap;">Command:</label>
+                            <select id="command-history-dropdown" class="history-dropdown" onchange="selectFromCommandHistory(this.value)" disabled>
+                                <option value="">Recent Commands</option>
+                            </select>
+                            <input type="text" id="command-input" placeholder="Enter command..." disabled style="flex: 1;">
+                            <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
+                        </div>
+
+                        <div class="input-area">
+                            <label style="color: #888; font-size: 12px; white-space: nowrap;">Message:</label>
+                            <select id="message-history-dropdown" class="history-dropdown" onchange="selectFromMessageHistory(this.value)" disabled>
+                                <option value="">Recent Messages</option>
+                            </select>
+                            <input type="text" id="world-message-input" placeholder="Enter world broadcast message..." disabled style="flex: 1;">
+                            <button id="send-msg-btn" onclick="sendWorldMessage()" disabled>Broadcast</button>
+                        </div>
+                    </section>
 
                         <!-- Players Tab -->
                         <section id="players-tab" class="tab-content">
-                            <div class="players-toolbar">
-                                <button id="refresh-players-btn" onclick="refreshPlayers()" disabled>Refresh Players</button>
-                                <label style="display: flex; align-items: center; gap: 8px; margin-left: 20px;">
-                                    <input type="checkbox" id="auto-refresh-checkbox" onchange="toggleAutoRefresh(this.checked)">
-                                    <span>Auto-refresh on login/logoff</span>
-                                </label>
-                            </div>
-                            <div id="players-list" class="players-list">
-                                <div class="info-message">Players will appear here after authentication</div>
+                            <div style="display: flex; gap: 20px; overflow: hidden; flex: 1; min-height: 0;">
+                                <!-- Players Content -->
+                                <div style="flex: 1 1 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+                                    <div class="players-toolbar">
+                                        <button id="refresh-players-btn" onclick="refreshPlayers()" disabled>Refresh Players</button>
+                                        <label style="display: flex; align-items: center; gap: 8px; margin-left: 20px;">
+                                            <input type="checkbox" id="auto-refresh-checkbox" onchange="toggleAutoRefresh(this.checked)">
+                                            <span>Auto-refresh on login/logoff</span>
+                                        </label>
+                                    </div>
+                                    <div id="players-list" class="players-list">
+                                        <div class="info-message">Players will appear here after authentication</div>
+                                    </div>
+                                </div>
+                                <!-- Players Sidebar (placeholder for kick/ban/mute) -->
+                                <aside id="players-sidebar" class="sidebar">
+                                    <section style="padding: 15px; color: #888; font-size: 12px; text-align: center;">
+                                        <p>Player actions (kick/ban/mute) coming soon</p>
+                                    </section>
+                                </aside>
                             </div>
                         </section>
 
                         <!-- Configuration Tab -->
                         <section id="config-tab" class="tab-content">
-                            <div class="config-content">
+                            <div style="display: flex; gap: 20px; overflow: hidden; flex: 1; min-height: 0;">
+                                <!-- Config Content -->
+                                <div style="flex: 1 1 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+                                    <div class="config-content">
                                 <h2>Console Message Colors</h2>
                                 <div class="color-config-section">
                                     <div class="color-config-row">
@@ -188,60 +221,47 @@
 
                                     <button onclick="saveSettings()" class="save-settings-btn">Save Settings</button>
                                 </div>
+                                    </div>
+                                </div>
+                                <!-- Config Sidebar (placeholder) -->
+                                <aside id="config-sidebar" class="sidebar">
+                                    <section style="padding: 15px; color: #888; font-size: 12px; text-align: center;">
+                                        <p>Configuration sidebar placeholder</p>
+                                    </section>
+                                </aside>
                             </div>
                         </section>
-
-                    <!-- Input Areas (constrained to left column width) -->
-                    <div class="input-area">
-                        <label style="color: #888; font-size: 12px; white-space: nowrap;">Command:</label>
-                        <select id="command-history-dropdown" class="history-dropdown" onchange="selectFromCommandHistory(this.value)" disabled>
-                            <option value="">Recent Commands</option>
-                        </select>
-                        <input type="text" id="command-input" placeholder="Enter command..." disabled style="flex: 1;">
-                        <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
-                    </div>
-
-                    <div class="input-area">
-                        <label style="color: #888; font-size: 12px; white-space: nowrap;">Message:</label>
-                        <select id="message-history-dropdown" class="history-dropdown" onchange="selectFromMessageHistory(this.value)" disabled>
-                            <option value="">Recent Messages</option>
-                        </select>
-                        <input type="text" id="world-message-input" placeholder="Enter world broadcast message..." disabled style="flex: 1;">
-                        <button id="send-msg-btn" onclick="sendWorldMessage()" disabled>Broadcast</button>
-                    </div>
-                    </div>
-
-                    <!-- Sidebar -->
-                    <aside id="sidebar" class="sidebar">
-                        <section class="server-info">
-                            <h3>Server Info</h3>
-                            <div id="server-stats">
-                                <p>Server: <span id="server-name">Loading...</span></p>
-                                <p>Status: <span id="server-status">Offline</span></p>
-                                <p>Players: <span id="player-count">0</span></p>
-                                <p>Uptime: <span id="uptime">0s</span></p>
-                                <p>ACE Server: <span style="white-space: nowrap;">v<span id="ace-server-version">-</span><span class="version-dot">.</span><span id="ace-server-build">-</span></span></p>
-                                <p>World Database:</p>
-                                <p style="margin-left: 15px; margin-top: 5px; margin-bottom: 5px;">Base: <span id="ace-database-base">-</span></p>
-                                <p style="margin-left: 15px; margin-top: 0; margin-bottom: 0;">Patch: <span id="ace-database-patch">-</span></p>
-                            </div>
-                        </section>
-                        <section class="rcon-commands-section">
-                            <h3>RCON Commands</h3>
-                            <button id="status-btn" onclick="statusCommand()" disabled>Status</button>
-                            <button id="hello-btn" onclick="helloCommand()" disabled>Hello</button>
-                        </section>
-
-                        <section class="ace-commands-section">
-                            <h3>ACE Commands</h3>
-                            <button id="ace-commands-btn" onclick="aceCommands()" disabled>ACE Commands</button>
-                            <button id="list-players-btn" onclick="listPlayers()" disabled>List Players</button>
-                            <button id="population-btn" onclick="population()" disabled>Population</button>
-                            <button id="stop-now-btn" onclick="stopNow()" disabled style="background-color: #d32f2f; margin-top: 10px;">Stop Server Now</button>
-                        </section>
-
-                    </aside>
                 </div>
+
+                <!-- Sidebar (right side, full height) -->
+                <aside id="sidebar" class="sidebar">
+                    <section class="server-info">
+                        <h3>Server Info</h3>
+                        <div id="server-stats">
+                            <p>Server: <span id="server-name">Loading...</span></p>
+                            <p>Status: <span id="server-status">Offline</span></p>
+                            <p>Players: <span id="player-count">0</span></p>
+                            <p>Uptime: <span id="uptime">0s</span></p>
+                            <p>ACE Server: <span style="white-space: nowrap;">v<span id="ace-server-version">-</span><span class="version-dot">.</span><span id="ace-server-build">-</span></span></p>
+                            <p>World Database:</p>
+                            <p style="margin-left: 15px; margin-top: 5px; margin-bottom: 5px;">Base: <span id="ace-database-base">-</span></p>
+                            <p style="margin-left: 15px; margin-top: 0; margin-bottom: 0;">Patch: <span id="ace-database-patch">-</span></p>
+                        </div>
+                    </section>
+                    <section class="rcon-commands-section">
+                        <h3>RCON Commands</h3>
+                        <button id="status-btn" onclick="statusCommand()" disabled>Status</button>
+                        <button id="hello-btn" onclick="helloCommand()" disabled>Hello</button>
+                    </section>
+
+                    <section class="ace-commands-section">
+                        <h3>ACE Commands</h3>
+                        <button id="ace-commands-btn" onclick="aceCommands()" disabled>ACE Commands</button>
+                        <button id="list-players-btn" onclick="listPlayers()" disabled>List Players</button>
+                        <button id="population-btn" onclick="population()" disabled>Population</button>
+                        <button id="stop-now-btn" onclick="stopNow()" disabled style="background-color: #d32f2f; margin-top: 10px;">Stop Server Now</button>
+                    </section>
+                </aside>
             </div>
         </main>
     </div>

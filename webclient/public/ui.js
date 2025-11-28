@@ -1013,6 +1013,21 @@ function switchTab(tabId) {
 
     // Mark button as active
     event.target.classList.add('active');
+
+    // Show appropriate sidebar based on active tab
+    const mainSidebar = document.getElementById('sidebar');
+    const playersSidebar = document.getElementById('players-sidebar');
+    const configSidebar = document.getElementById('config-sidebar');
+
+    if (mainSidebar) {
+        mainSidebar.style.display = (tabId === 'console-tab') ? 'flex' : 'none';
+    }
+    if (playersSidebar) {
+        playersSidebar.style.display = (tabId === 'players-tab') ? 'flex' : 'none';
+    }
+    if (configSidebar) {
+        configSidebar.style.display = (tabId === 'config-tab') ? 'flex' : 'none';
+    }
 }
 
 /**
