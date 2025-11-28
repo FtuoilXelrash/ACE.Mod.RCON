@@ -1463,8 +1463,16 @@ async function sendWorldMessage() {
         messageInput.disabled = true;
         addOutput(`[BROADCAST] ${message}`, 'broadcast-message');
 
-        // Use gamecast command to send world-wide broadcast
-        const response = await client.send('gamecast', [message]);
+        // Parse message into words like sendCommand does
+        const parts = message.split(/\s+/);
+        const cmd = 'gamecast';
+        const args = parts; // Message words as separate args
+
+        console.log('[sendWorldMessage] Sending gamecast command');
+        console.log('[sendWorldMessage] Command:', cmd);
+        console.log('[sendWorldMessage] Args:', args);
+
+        const response = await client.send(cmd, args);
 
         // Response is handled by onResponse
     } catch (error) {

@@ -53,6 +53,12 @@ public static class RconProtocol
         bool useAceAuth = settings?.UseAceAuthentication ?? false;
         string command = request.Command ?? request.Message ?? "";
 
+        // Reconstruct full command with args if args were provided
+        if (!string.IsNullOrEmpty(command) && request.Args != null && request.Args.Count > 0)
+        {
+            command = command + " " + string.Join(" ", request.Args);
+        }
+
         if (settings?.EnableLogging ?? false)
             ModManager.Log($"[RCON] Command: {command}, IsAuthenticated: {connection.IsAuthenticated}, UseAceAuth: {useAceAuth}");
 
