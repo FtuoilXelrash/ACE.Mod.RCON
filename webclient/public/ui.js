@@ -1024,6 +1024,14 @@ function switchTab(tabId) {
     }
     if (playersSidebar) {
         playersSidebar.style.display = (tabId === 'players-tab') ? 'flex' : 'none';
+        // Clear player selection when switching away from Players tab
+        if (tabId !== 'players-tab') {
+            document.querySelectorAll('.player-item.selected').forEach(item => {
+                item.classList.remove('selected');
+                const cb = item.querySelector('.player-checkbox');
+                if (cb) cb.checked = false;
+            });
+        }
     }
     if (configSidebar) {
         configSidebar.style.display = (tabId === 'config-tab') ? 'flex' : 'none';
@@ -1067,13 +1075,22 @@ function displayPlayers(playersData) {
 
     let html = '';
     playersData.players.forEach((player, index) => {
+        // Handle both object and string representations
+        let playerName = player.Name || player.name || 'Unknown';
+        let playerLevel = player.Level || player.level || 'N/A';
+        let playerRace = player.Race || player.race || '';
+        let playerLocation = player.Location || player.location || '';
+
+        let details = `Level: ${playerLevel}`;
+        if (playerRace) details += ` | Race: ${playerRace}`;
+        if (playerLocation) details += ` | ${playerLocation}`;
+
         html += `
-            <div class="player-item" onclick="togglePlayerSelect(this, '${player.Name}')">
+            <div class="player-item" onclick="togglePlayerSelect(this, '${playerName}')">
                 <input type="checkbox" class="player-checkbox" onclick="event.stopPropagation()">
                 <div class="player-info">
-                    <span class="player-name">${player.Name}</span>
-                    <span class="player-level">Level: ${player.Level}</span>
-                    <span class="player-location">${player.Location}</span>
+                    <span class="player-name">${playerName}</span>
+                    <span class="player-details" style="font-size: 11px; color: #aaa;">${details}</span>
                 </div>
             </div>
         `;
@@ -1083,14 +1100,25 @@ function displayPlayers(playersData) {
 }
 
 /**
- * Toggle player selection
+ * Toggle player selection (single-select only)
  */
 function togglePlayerSelect(element, playerName) {
+    // Uncheck all other players
+    document.querySelectorAll('.player-item.selected').forEach(item => {
+        item.classList.remove('selected');
+        const cb = item.querySelector('.player-checkbox');
+        if (cb) cb.checked = false;
+    });
+
+    // Toggle current player
     element.classList.toggle('selected');
     const checkbox = element.querySelector('.player-checkbox');
     if (checkbox) {
         checkbox.checked = !checkbox.checked;
     }
+
+    // Update sidebar
+    updatePlayerActionsSidebar();
 }
 
 /**
@@ -1103,6 +1131,126 @@ function getSelectedPlayers() {
         selected.push(name);
     });
     return selected;
+}
+
+/**
+ * Update player actions sidebar with selected player info
+ */
+function updatePlayerActionsSidebar() {
+    const selected = document.querySelector('.player-item.selected');
+    const infoDiv = document.getElementById('selected-player-info');
+    const bootBtn = document.getElementById('boot-player-btn');
+    const banBtn = document.getElementById('ban-player-btn');
+
+    if (selected) {
+        const playerName = selected.querySelector('.player-name').textContent;
+        const playerDetails = selected.querySelector('.player-details').textContent;
+
+        infoDiv.innerHTML = `
+            <p style="margin: 5px 0; font-weight: bold; color: #fff;">${playerName}</p>
+            <p style="margin: 3px 0; font-size: 11px;">${playerDetails}</p>
+        `;
+
+        bootBtn.disabled = false;
+        banBtn.disabled = false;
+    } else {
+        infoDiv.innerHTML = '<p style="margin: 0; text-align: center;">No player selected</p>';
+        bootBtn.disabled = true;
+        banBtn.disabled = true;
+    }
+}
+
+/**
+ * Boot selected player
+ */
+function bootSelectedPlayer() {
+    const selected = document.querySelector('.player-item.selected');
+    if (!selected) return;
+
+    const playerName = selected.querySelector('.player-name').textContent;
+    const confirmed = confirm(`Are you sure you want to boot ${playerName}?`);
+
+    if (confirmed) {
+        client.send('boot', ['char', playerName])
+            .then(response => {
+                if (response.Status === 'success') {
+                    addOutput(`Successfully booted player: ${playerName}`, 'success-output');
+                    // Clear selection and refresh players
+                    selected.classList.remove('selected');
+                    const checkbox = selected.querySelector('.player-checkbox');
+                    if (checkbox) checkbox.checked = false;
+                    updatePlayerActionsSidebar();
+                    refreshPlayers();
+                } else {
+                    addOutput(`Error booting player: ${response.Message}`, 'error-output');
+                }
+            })
+            .catch(err => {
+                addOutput(`Error booting player: ${err.message}`, 'error-output');
+            });
+    }
+}
+
+/**
+ * Ban selected player
+ */
+function banSelectedPlayer() {
+    const selected = document.querySelector('.player-item.selected');
+    if (!selected) return;
+
+    const playerName = selected.querySelector('.player-name').textContent;
+    const confirmed = confirm(`Are you sure you want to ban ${playerName} for 365 days? This action cannot be easily undone.`);
+
+    if (confirmed) {
+        // First, get the account name from the character name
+        // We'll use the "char_account" command or similar to get account info
+        // For now, we'll try to get account using character search
+        client.send('char_account', [playerName])
+            .then(response => {
+                if (response.Status === 'success') {
+                    // Extract account name from response
+                    // The response Message should contain account info
+                    const message = response.Message || '';
+                    console.log('[UI] char_account response:', message);
+
+                    // Try to extract account name from message
+                    // Format is typically "Account: [AccountName]" or similar
+                    let accountName = null;
+
+                    // Try to find account name in the message
+                    if (message.includes('Account:')) {
+                        const match = message.match(/Account:\s*(\S+)/i);
+                        accountName = match ? match[1] : playerName;
+                    } else {
+                        // Fallback to player name if we can't parse account name
+                        accountName = playerName;
+                    }
+
+                    addOutput(`Banning account: ${accountName} for 365 days...`, 'info-output');
+
+                    // Now execute the ban command
+                    return client.send('ban', [accountName, '365', '0', '0']);
+                } else {
+                    throw new Error(`Could not find account for player: ${response.Message}`);
+                }
+            })
+            .then(response => {
+                if (response.Status === 'success') {
+                    addOutput(`Successfully banned player: ${playerName}`, 'success-output');
+                    // Clear selection and refresh players
+                    selected.classList.remove('selected');
+                    const checkbox = selected.querySelector('.player-checkbox');
+                    if (checkbox) checkbox.checked = false;
+                    updatePlayerActionsSidebar();
+                    refreshPlayers();
+                } else {
+                    addOutput(`Error banning player: ${response.Message}`, 'error-output');
+                }
+            })
+            .catch(err => {
+                addOutput(`Error banning player: ${err.message}`, 'error-output');
+            });
+    }
 }
 
 /**

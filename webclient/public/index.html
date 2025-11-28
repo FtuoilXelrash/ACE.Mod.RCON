@@ -98,10 +98,15 @@
                                         <div class="info-message">Players will appear here after authentication</div>
                                     </div>
                                 </div>
-                                <!-- Players Sidebar (placeholder for kick/ban/mute) -->
+                                <!-- Players Sidebar (player actions) -->
                                 <aside id="players-sidebar" class="sidebar">
-                                    <section style="padding: 15px; color: #888; font-size: 12px; text-align: center;">
-                                        <p>Player actions (kick/ban/mute) coming soon</p>
+                                    <section style="padding: 15px;">
+                                        <h3 style="margin-top: 0; color: #fff;">Selected Player</h3>
+                                        <div id="selected-player-info" style="padding: 10px; background-color: #222; border-radius: 4px; margin-bottom: 15px; color: #aaa; font-size: 12px;">
+                                            <p style="margin: 0; text-align: center;">No player selected</p>
+                                        </div>
+                                        <button id="boot-player-btn" onclick="bootSelectedPlayer()" disabled style="width: 100%; padding: 10px; margin-bottom: 10px; background-color: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Boot Player</button>
+                                        <button id="ban-player-btn" onclick="banSelectedPlayer()" disabled style="width: 100%; padding: 10px; background-color: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Ban Player</button>
                                     </section>
                                 </aside>
                             </div>
