@@ -21,6 +21,10 @@ class HistoryManager {
         if (savedCommands) {
             try {
                 this.commandHistory = JSON.parse(savedCommands);
+                // Remove any duplicates from loaded history
+                this.commandHistory = [...new Set(this.commandHistory)];
+                // Keep only last 10
+                this.commandHistory = this.commandHistory.slice(0, this.maxHistorySize);
                 console.log('[HistoryManager] Loaded command history:', this.commandHistory);
             } catch (e) {
                 console.error('[HistoryManager] Failed to parse command history:', e);
@@ -31,6 +35,10 @@ class HistoryManager {
         if (savedMessages) {
             try {
                 this.messageHistory = JSON.parse(savedMessages);
+                // Remove any duplicates from loaded history
+                this.messageHistory = [...new Set(this.messageHistory)];
+                // Keep only last 10
+                this.messageHistory = this.messageHistory.slice(0, this.maxHistorySize);
                 console.log('[HistoryManager] Loaded message history:', this.messageHistory);
             } catch (e) {
                 console.error('[HistoryManager] Failed to parse message history:', e);
@@ -38,8 +46,10 @@ class HistoryManager {
             }
         }
 
-        // Sync with server-side JSON files if available
-        await this.syncWithServer();
+        // Sync with server-side JSON files if available (fire and forget - don't block initialization)
+        this.syncWithServer().catch(err =>
+            console.log('[HistoryManager] Server sync failed (continuing):', err)
+        );
     }
 
     /**
@@ -121,10 +131,10 @@ class HistoryManager {
             console.error('[HistoryManager] FAILED to save to localStorage:', e);
         }
 
-        // Try to sync with server (fire and forget)
-        this.syncToServer().catch(err =>
-            console.log('[HistoryManager] Server sync failed (continuing):', err)
-        );
+        // Server sync disabled - localStorage is sufficient for now
+        // this.syncToServer().catch(err =>
+        //     console.log('[HistoryManager] Server sync failed (continuing):', err)
+        // );
     }
 
     /**
@@ -177,7 +187,9 @@ class HistoryManager {
     }
 }
 
-// Create global instance
+// Create global instance and ensure it's on window object
 const historyManager = new HistoryManager();
+window.historyManager = historyManager;
 
 console.log('[history-manager.js] HistoryManager loaded');
+console.log('[history-manager.js] historyManager assigned to window:', typeof window.historyManager !== 'undefined');

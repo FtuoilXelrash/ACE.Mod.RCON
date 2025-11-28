@@ -88,6 +88,7 @@
 	<ItemGroup>
 		<EmbeddedResource Include="webclient/public/index.html" />
 		<EmbeddedResource Include="webclient/public/style.css" />
+		<EmbeddedResource Include="webclient/public/history-manager.js" />
 		<EmbeddedResource Include="webclient/public/rcon-client.js" />
 		<EmbeddedResource Include="webclient/public/ui.js" />
 	</ItemGroup>

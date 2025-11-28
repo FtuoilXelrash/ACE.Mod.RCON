@@ -10,6 +10,7 @@ let autoRefreshPlayers = true;
 let clientConfig = null;
 let useAceAuthentication = false; // Will be set from server config (auto-detected)
 let historyManagerReady = false; // Track when history manager is ready
+// historyManager is created globally by history-manager.js - don't declare it here!
 
 /**
  * Initialize the UI and WebSocket client
@@ -66,8 +67,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Initialize history manager for command and message history
-    await initializeHistory();
+    // Initialize history manager for command and message history (fire and forget - don't block UI)
+    initializeHistory().catch(err => console.error('[UI] History init error (continuing):', err));
 
     // Restore auto-refresh checkbox state from localStorage
     const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
@@ -357,6 +358,13 @@ function handleAuthenticationComplete(authResponse) {
 
     // Enable UI
     enableCommands();
+
+    // Refresh history dropdowns after auth (in case they weren't loaded yet)
+    if (historyManagerReady && historyManager) {
+        console.log('[handleAuthenticationComplete] Refreshing history dropdowns');
+        updateCommandHistoryDropdown();
+        updateMessageHistoryDropdown();
+    }
 
     // Update input placeholder
     const commandInput = document.getElementById('command-input');
@@ -653,22 +661,30 @@ async function sendCommand() {
         // Add to history manager and update dropdown
         console.log('[sendCommand] Attempting to add to history:', command);
         console.log('[sendCommand] historyManagerReady:', historyManagerReady);
-        console.log('[sendCommand] typeof historyManager:', typeof historyManager);
 
-        if (historyManagerReady && historyManager) {
+        // Try to get historyManager from window if local variable isn't set
+        let mgr = historyManager;
+        if (!mgr && typeof window.historyManager !== 'undefined') {
+            console.log('[sendCommand] Using window.historyManager (local not set)');
+            mgr = window.historyManager;
+        }
+        console.log('[sendCommand] mgr exists:', typeof mgr !== 'undefined');
+
+        if (mgr && typeof mgr.addCommand === 'function') {
             try {
-                historyManager.addCommand(command);
+                mgr.addCommand(command);
                 console.log('[sendCommand] ✓ Command added to history');
-                console.log('[sendCommand] History now contains:', historyManager.getCommands());
+                console.log('[sendCommand] History now contains:', mgr.getCommands());
                 updateCommandHistoryDropdown();
                 console.log('[sendCommand] ✓ Dropdown updated');
             } catch (e) {
                 console.error('[sendCommand] Error adding to history:', e);
             }
         } else {
-            console.warn('[sendCommand] History manager NOT ready');
+            console.warn('[sendCommand] History manager NOT available');
             console.warn('  - historyManagerReady:', historyManagerReady);
-            console.warn('  - historyManager exists:', !!historyManager);
+            console.warn('  - local historyManager:', typeof historyManager !== 'undefined');
+            console.warn('  - window.historyManager:', typeof window.historyManager !== 'undefined');
         }
 
         // Also maintain legacy command history for arrow key navigation
@@ -1529,7 +1545,17 @@ function updateCommandHistoryDropdown() {
         return;
     }
 
-    const commands = historyManager.getCommands();
+    let mgr = historyManager;
+    if (!mgr && typeof window.historyManager !== 'undefined') {
+        mgr = window.historyManager;
+    }
+
+    if (!mgr || typeof mgr.getCommands !== 'function') {
+        console.warn('[updateCommandHistoryDropdown] History manager not available');
+        return;
+    }
+
+    const commands = mgr.getCommands();
     console.log('[updateCommandHistoryDropdown] Retrieved commands:', commands);
 
     // Clear existing options except the first one
@@ -1607,11 +1633,15 @@ async function sendWorldMessage() {
         messageInput.focus();
 
         // Add to history manager and update dropdown
-        if (historyManagerReady && typeof historyManager !== 'undefined') {
-            historyManager.addMessage(message);
+        let mgr = historyManager;
+        if (!mgr && typeof window.historyManager !== 'undefined') {
+            mgr = window.historyManager;
+        }
+        if (mgr && typeof mgr.addMessage === 'function') {
+            mgr.addMessage(message);
             updateMessageHistoryDropdown();
         } else {
-            console.warn('[sendWorldMessage] History manager not ready');
+            console.warn('[sendWorldMessage] History manager not available');
         }
     }
 }
@@ -1623,7 +1653,17 @@ function updateMessageHistoryDropdown() {
     const dropdown = document.getElementById('message-history-dropdown');
     if (!dropdown) return;
 
-    const messages = historyManager.getMessages();
+    let mgr = historyManager;
+    if (!mgr && typeof window.historyManager !== 'undefined') {
+        mgr = window.historyManager;
+    }
+
+    if (!mgr || typeof mgr.getMessages !== 'function') {
+        console.warn('[updateMessageHistoryDropdown] History manager not available');
+        return;
+    }
+
+    const messages = mgr.getMessages();
 
     // Clear existing options except the first one
     while (dropdown.options.length > 1) {
@@ -1666,13 +1706,20 @@ function selectFromMessageHistory(value) {
 async function initializeHistory() {
     try {
         console.log('[UI] Initializing history manager...');
+
+        // Ensure we have a reference to the global historyManager from history-manager.js
+        if (typeof window.historyManager !== 'undefined' && window.historyManager !== null) {
+            historyManager = window.historyManager;
+            console.log('[UI] Assigned global historyManager from window');
+        }
+
         console.log('[UI] historyManager type:', typeof historyManager);
         console.log('[UI] historyManager object:', historyManager);
 
         // historyManager is created in history-manager.js as a global
         if (!historyManager) {
-            console.error('[UI] historyManager is null or undefined!');
-            return;
+            console.warn('[UI] historyManager is null or undefined - history will not work but UI will continue');
+            return;  // Don't block UI initialization if history manager isn't available
         }
 
         console.log('[UI] Calling historyManager.init()...');
@@ -1680,14 +1727,19 @@ async function initializeHistory() {
         console.log('[UI] historyManager.init() completed');
 
         // Update dropdowns after history is loaded
-        updateCommandHistoryDropdown();
-        updateMessageHistoryDropdown();
+        try {
+            updateCommandHistoryDropdown();
+            updateMessageHistoryDropdown();
+        } catch (e) {
+            console.error('[UI] Error updating dropdowns:', e);
+        }
 
         historyManagerReady = true;
         console.log('[UI] ✓ History manager fully initialized and ready');
     } catch (error) {
         console.error('[UI] FAILED to initialize history manager:', error);
         console.error('[UI] Error stack:', error.stack);
+        // Continue anyway - history is not critical to UI function
     }
 }
 
