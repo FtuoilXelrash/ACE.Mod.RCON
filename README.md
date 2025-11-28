@@ -25,6 +25,9 @@ RCON (Remote Console) mod for Asheron's Call Emulator (ACE) server. Provides rem
 - ✅ Security: Invalid password keeps user on login page, no console access
 - ✅ Stop Server Now button with confirmation dialog
 - ✅ Quick command buttons for common operations
+- ✅ Command and message history with dropdown selectors
+- ✅ Tab-specific sidebars for Console, Players, and Configuration tabs
+- ✅ Responsive input layout matching console window width
 
 ## Quick Start
 
