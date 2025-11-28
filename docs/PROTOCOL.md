@@ -455,10 +455,232 @@ All commands except `auth` require authentication.
 
 When `Settings.DebugMode` is true, the `Debug` field is set to `true` in all responses. Web clients should display full JSON responses when this flag is set, allowing detailed inspection of the response structure and data.
 
+## Server-Sent Broadcast Events
+
+The server automatically sends broadcast events to all authenticated clients. Clients do not request these; they arrive unsolicited from the server.
+
+### Player Login Event
+
+Sent when a player enters the world.
+
+**Format:**
+```json
+{
+  "Identifier": -1,
+  "Status": "broadcast",
+  "Command": "player-login",
+  "Message": "Player logged in",
+  "Data": {
+    "PlayerName": "CharacterName",
+    "PlayerGuid": "0x123456789ABCDEF0",
+    "Level": 180,
+    "Location": "AR: 001A 015E 001B",
+    "Count": 5,
+    "WorldTime": "2024-11-25T10:30:45.1234567Z"
+  },
+  "Debug": false
+}
+```
+
+**Fields:**
+- **Identifier**: -1 (broadcast, not a response to a request)
+- **Status**: "broadcast"
+- **Command**: "player-login"
+- **Count**: Updated total player count
+- **WorldTime**: Server world time for uptime calculation
+
+### Player Logoff Event
+
+Sent when a player leaves the world.
+
+**Format:**
+```json
+{
+  "Identifier": -1,
+  "Status": "broadcast",
+  "Command": "player-logoff",
+  "Message": "Player logged off",
+  "Data": {
+    "PlayerName": "CharacterName",
+    "PlayerGuid": "0x123456789ABCDEF0",
+    "Level": 180,
+    "Location": "AR: 001A 015E 001B",
+    "Count": 4,
+    "WorldTime": "2024-11-25T10:30:45.1234567Z"
+  },
+  "Debug": false
+}
+```
+
+### Console Log Broadcast
+
+Sent when server logs a message (real-time log streaming).
+
+**Format:**
+```json
+{
+  "Identifier": -1,
+  "Status": "broadcast",
+  "Command": "console-log",
+  "Message": "[CHAT] [PlayerName] Message content here",
+  "Data": {
+    "Timestamp": "2024-11-25T10:30:45.1234567Z",
+    "Level": "INFO",
+    "Type": "CHAT",
+    "Content": "Message content here"
+  },
+  "Debug": false
+}
+```
+
+**Fields:**
+- **Level**: Log level (DEBUG, INFO, WARNING, ERROR)
+- **Type**: Message tag (CHAT, AUDIT, SYSTEM, etc.) or null if no tag
+- **Content**: Raw message content
+- **Timestamp**: ISO 8601 UTC timestamp
+
+## TCP Connection Examples
+
+### Rust-style Authentication (TCP)
+
+**Step 1: Connect to server**
+```
+telnet 127.0.0.1 9004
+```
+
+**Step 2: Send password as first message (plain text, no JSON)**
+```
+your_password
+```
+
+**Step 3: Send commands as JSON (one per line)**
+```
+{"Command": "status", "Identifier": 1}
+```
+
+**Step 4: Receive responses (JSON, one per line)**
+```json
+{
+  "Identifier": 1,
+  "Status": "success",
+  "Message": "Server status",
+  "Data": { ... }
+}
+```
+
+### Complete TCP Flow Example
+
+```
+$ telnet 127.0.0.1 9004
+Connected to 127.0.0.1.
+Escape character is '^]'.
+MySecurePassword
+[server responds with queued commands or waits for input]
+{"Command": "hello", "Identifier": 1}
+{response with server state}
+{"Command": "players", "Identifier": 2}
+{response with player list}
+```
+
+### Message Delimiters
+
+- TCP: Messages are delimited by newline character (\n)
+- Each message must be valid JSON followed by a newline
+- Empty lines are ignored
+- Invalid JSON results in error response with Identifier -1
+
+## Desktop Client Implementation Guide
+
+### C# TCP Client Example
+
+```csharp
+using System;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
+
+class RconClient
+{
+    private TcpClient client;
+    private NetworkStream stream;
+    private int nextId = 1;
+
+    public void Connect(string host, int port, string password)
+    {
+        client = new TcpClient();
+        client.Connect(host, port);
+        stream = client.GetStream();
+
+        // Send password as first message (plain text)
+        byte[] passwordBytes = Encoding.UTF8.GetBytes(password + "\n");
+        stream.Write(passwordBytes, 0, passwordBytes.Length);
+        stream.Flush();
+    }
+
+    public JsonElement SendCommand(string command, params string[] args)
+    {
+        var request = new
+        {
+            Command = command,
+            Args = args,
+            Identifier = nextId++
+        };
+
+        string json = JsonSerializer.Serialize(request) + "\n";
+        byte[] data = Encoding.UTF8.GetBytes(json);
+        stream.Write(data, 0, data.Length);
+        stream.Flush();
+
+        // Read response
+        return ReadResponse();
+    }
+
+    private JsonElement ReadResponse()
+    {
+        // Read until newline
+        var buffer = new StringBuilder();
+        int read;
+        while ((read = stream.ReadByte()) != -1)
+        {
+            if (read == '\n') break;
+            buffer.Append((char)read);
+        }
+
+        return JsonDocument.Parse(buffer.ToString()).RootElement;
+    }
+
+    public void Disconnect()
+    {
+        stream?.Close();
+        client?.Close();
+    }
+}
+```
+
+### Connection Management
+
+**Reconnection Strategy:**
+1. Attempt to connect with exponential backoff
+2. Re-send password on reconnection
+3. Maintain message queue during disconnection
+4. Resume from last successful command ID
+5. Re-sync state with HELLO command after reconnection
+
+**Timeout Handling:**
+- Set TCP socket timeout to avoid hanging indefinitely
+- Implement heartbeat ping if needed (e.g., send STATUS periodically)
+- Close connection if server doesn't respond within timeout
+
+**Error Recovery:**
+- Catch JSON parse errors gracefully
+- Retry failed commands up to 3 times
+- Log connection errors for debugging
+- Notify user of persistent connection failures
+
 ## Future Extensions
 
 Planned for Phase 2:
-- Broadcast messages to multiple clients
-- Command scheduling
-- Server event subscriptions
+- Broadcast message subscriptions
+- Command scheduling and queuing
+- Server event filtering
 - More granular command access control
