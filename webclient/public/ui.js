@@ -85,11 +85,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Show login page on load
     showLoginPage();
-    // Show both fields by default (will update based on server's auth mode after first attempt)
-    const usernameGroup = document.getElementById('login-username-group');
-    if (usernameGroup) {
-        usernameGroup.style.display = 'flex';  // Show username field by default
-    }
 
     // Fetch server config on page load to detect auth mode and set correct login title
     fetchServerConfig();

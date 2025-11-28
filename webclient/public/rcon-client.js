@@ -153,6 +153,15 @@ class RconClient {
                     // Check if connection was rejected due to auth failure (PolicyViolation close code = 1008)
                     const isAuthFailure = event.code === 1008; // WebSocketCloseStatus.PolicyViolation
 
+                    // Reject any pending requests if auth failed
+                    if (isAuthFailure) {
+                        const pendingError = new Error('Connection rejected - Invalid credentials');
+                        this.pendingRequests.forEach((request) => {
+                            request.reject(pendingError);
+                        });
+                        this.pendingRequests.clear();
+                    }
+
                     // Don't auto-reconnect if reconnect is disabled (after successful auth)
                     if (this.disableReconnect) {
                         console.log('[RconClient] Auto-reconnect is disabled - not reconnecting');
@@ -285,6 +294,22 @@ class RconClient {
                         if (response.Status === 'error') {
                             reject(new Error(response.Message || 'Command failed'));
                         } else {
+                            // Check if this is an authentication response
+                            if (response.Status === 'authenticated' || response.Status === 'success') {
+                                // Check if we just authenticated (not already authenticated)
+                                if (!this.isAuthenticated && (command === 'hello' || command === 'auth')) {
+                                    this.isAuthenticated = true;
+                                    // Disable auto-reconnect after successful authentication
+                                    this.disableReconnect = true;
+                                    this.reconnectAttempts = 0;
+                                    // Clear any pending reconnection timer since we're authenticated now
+                                    if (this.reconnectTimer) {
+                                        clearTimeout(this.reconnectTimer);
+                                        this.reconnectTimer = null;
+                                    }
+                                    this.emit('authenticated', response);
+                                }
+                            }
                             // Resolve for success, authenticated, or other non-error statuses
                             resolve(response);
                         }
