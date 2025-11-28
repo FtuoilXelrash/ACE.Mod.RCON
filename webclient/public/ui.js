@@ -30,9 +30,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up UI event listeners
     const commandInput = document.getElementById('command-input');
     const sendBtn = document.getElementById('send-btn');
+    const worldMessageInput = document.getElementById('world-message-input');
+    const sendMsgBtn = document.getElementById('send-msg-btn');
 
     if (sendBtn) {
         sendBtn.addEventListener('click', sendCommand);
+    }
+
+    if (sendMsgBtn) {
+        sendMsgBtn.addEventListener('click', sendWorldMessage);
     }
 
     if (commandInput) {
@@ -49,6 +55,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    if (worldMessageInput) {
+        worldMessageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendWorldMessage();
+            }
+        });
+    }
+
+    // Initialize history manager for command and message history
+    initializeHistory();
 
     // Restore auto-refresh checkbox state from localStorage
     const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
@@ -636,7 +654,14 @@ async function sendCommand() {
         commandInput.value = '';
         commandInput.focus();
 
-        // Add to history
+        // Add to history manager and update dropdown
+        console.log('[sendCommand] Adding to history:', command);
+        historyManager.addCommand(command);
+        console.log('[sendCommand] History after add:', historyManager.getCommands());
+        updateCommandHistoryDropdown();
+        console.log('[sendCommand] Dropdown updated');
+
+        // Also maintain legacy command history for arrow key navigation
         commandHistory.push(command);
         historyIndex = commandHistory.length;
     }
@@ -883,6 +908,10 @@ function updateStatus(status, text) {
 function enableCommands() {
     const commandInput = document.getElementById('command-input');
     const sendBtn = document.getElementById('send-btn');
+    const worldMessageInput = document.getElementById('world-message-input');
+    const sendMsgBtn = document.getElementById('send-msg-btn');
+    const commandHistoryDropdown = document.getElementById('command-history-dropdown');
+    const messageHistoryDropdown = document.getElementById('message-history-dropdown');
     const quickButtons = document.querySelectorAll('.quick-commands button');
     const refreshPlayersBtn = document.getElementById('refresh-players-btn');
     const aceCommandsBtn = document.getElementById('ace-commands-btn');
@@ -894,6 +923,10 @@ function enableCommands() {
 
     if (commandInput) commandInput.disabled = false;
     if (sendBtn) sendBtn.disabled = false;
+    if (worldMessageInput) worldMessageInput.disabled = false;
+    if (sendMsgBtn) sendMsgBtn.disabled = false;
+    if (commandHistoryDropdown) commandHistoryDropdown.disabled = false;
+    if (messageHistoryDropdown) messageHistoryDropdown.disabled = false;
     if (refreshPlayersBtn) refreshPlayersBtn.disabled = false;
     if (aceCommandsBtn) aceCommandsBtn.disabled = false;
     if (listPlayersBtn) listPlayersBtn.disabled = false;
@@ -913,6 +946,10 @@ function enableCommands() {
 function disableCommands() {
     const commandInput = document.getElementById('command-input');
     const sendBtn = document.getElementById('send-btn');
+    const worldMessageInput = document.getElementById('world-message-input');
+    const sendMsgBtn = document.getElementById('send-msg-btn');
+    const commandHistoryDropdown = document.getElementById('command-history-dropdown');
+    const messageHistoryDropdown = document.getElementById('message-history-dropdown');
     const quickButtons = document.querySelectorAll('.quick-commands button');
     const refreshPlayersBtn = document.getElementById('refresh-players-btn');
     const aceCommandsBtn = document.getElementById('ace-commands-btn');
@@ -924,6 +961,10 @@ function disableCommands() {
 
     if (commandInput) commandInput.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
+    if (worldMessageInput) worldMessageInput.disabled = true;
+    if (sendMsgBtn) sendMsgBtn.disabled = true;
+    if (commandHistoryDropdown) commandHistoryDropdown.disabled = true;
+    if (messageHistoryDropdown) messageHistoryDropdown.disabled = true;
     if (refreshPlayersBtn) refreshPlayersBtn.disabled = true;
     if (aceCommandsBtn) aceCommandsBtn.disabled = true;
     if (listPlayersBtn) listPlayersBtn.disabled = true;
@@ -1337,6 +1378,153 @@ function saveSettings() {
 
     // TODO: Send settings to server API endpoint (when implemented)
     // This would require a new server endpoint to update settings.json
+}
+
+/**
+ * Update command history dropdown
+ */
+function updateCommandHistoryDropdown() {
+    const dropdown = document.getElementById('command-history-dropdown');
+    if (!dropdown) {
+        console.error('[updateCommandHistoryDropdown] Dropdown element not found!');
+        return;
+    }
+
+    const commands = historyManager.getCommands();
+    console.log('[updateCommandHistoryDropdown] Retrieved commands:', commands);
+
+    // Clear existing options except the first one
+    while (dropdown.options.length > 1) {
+        dropdown.remove(1);
+    }
+
+    // Add commands to dropdown
+    commands.forEach(command => {
+        const option = document.createElement('option');
+        option.value = command;
+        // Truncate long commands for display
+        option.textContent = command.length > 40 ? command.substring(0, 37) + '...' : command;
+        dropdown.appendChild(option);
+        console.log('[updateCommandHistoryDropdown] Added option:', command);
+    });
+
+    console.log('[updateCommandHistoryDropdown] Dropdown now has', dropdown.options.length, 'options');
+}
+
+/**
+ * Select from command history dropdown
+ */
+function selectFromCommandHistory(value) {
+    if (value) {
+        const input = document.getElementById('command-input');
+        if (input) {
+            input.value = value;
+            input.focus();
+        }
+        // Reset dropdown to default
+        const dropdown = document.getElementById('command-history-dropdown');
+        if (dropdown) {
+            dropdown.selectedIndex = 0;
+        }
+    }
+}
+
+/**
+ * Send world message using gamecast command
+ */
+async function sendWorldMessage() {
+    const messageInput = document.getElementById('world-message-input');
+    if (!messageInput) return;
+
+    let message = messageInput.value.trim();
+    if (!message) return;
+
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        messageInput.disabled = true;
+        addOutput(`[BROADCAST] ${message}`, 'broadcast-message');
+
+        // Use gamecast command to send world-wide broadcast
+        const response = await client.send('gamecast', [message]);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Broadcast error: ${error.message}`, 'error-message');
+    } finally {
+        messageInput.disabled = false;
+        messageInput.value = '';
+        messageInput.focus();
+
+        // Add to history manager and update dropdown
+        historyManager.addMessage(message);
+        updateMessageHistoryDropdown();
+    }
+}
+
+/**
+ * Update message history dropdown
+ */
+function updateMessageHistoryDropdown() {
+    const dropdown = document.getElementById('message-history-dropdown');
+    if (!dropdown) return;
+
+    const messages = historyManager.getMessages();
+
+    // Clear existing options except the first one
+    while (dropdown.options.length > 1) {
+        dropdown.remove(1);
+    }
+
+    // Add messages to dropdown
+    messages.forEach(message => {
+        const option = document.createElement('option');
+        option.value = message;
+        // Truncate long messages for display
+        option.textContent = message.length > 40 ? message.substring(0, 37) + '...' : message;
+        dropdown.appendChild(option);
+    });
+
+    console.log('[UI] Message history dropdown updated with', messages.length, 'items');
+}
+
+/**
+ * Select from message history dropdown
+ */
+function selectFromMessageHistory(value) {
+    if (value) {
+        const input = document.getElementById('world-message-input');
+        if (input) {
+            input.value = value;
+            input.focus();
+        }
+        // Reset dropdown to default
+        const dropdown = document.getElementById('message-history-dropdown');
+        if (dropdown) {
+            dropdown.selectedIndex = 0;
+        }
+    }
+}
+
+/**
+ * Initialize history manager
+ */
+async function initializeHistory() {
+    try {
+        console.log('[UI] Initializing history manager...');
+        await historyManager.init();
+
+        // Update dropdowns after history is loaded
+        updateCommandHistoryDropdown();
+        updateMessageHistoryDropdown();
+
+        console.log('[UI] History manager initialized');
+    } catch (error) {
+        console.error('[UI] Failed to initialize history manager:', error);
+    }
 }
 
 console.log('[ui.js] UI module loaded');

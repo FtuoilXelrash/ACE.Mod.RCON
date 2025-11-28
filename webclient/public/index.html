@@ -190,6 +190,25 @@
                                 </div>
                             </div>
                         </section>
+
+                    <!-- Input Areas (constrained to left column width) -->
+                    <div class="input-area">
+                        <label style="color: #888; font-size: 12px; white-space: nowrap;">Command:</label>
+                        <select id="command-history-dropdown" class="history-dropdown" onchange="selectFromCommandHistory(this.value)" disabled>
+                            <option value="">Recent Commands</option>
+                        </select>
+                        <input type="text" id="command-input" placeholder="Enter command..." disabled style="flex: 1;">
+                        <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
+                    </div>
+
+                    <div class="input-area">
+                        <label style="color: #888; font-size: 12px; white-space: nowrap;">Message:</label>
+                        <select id="message-history-dropdown" class="history-dropdown" onchange="selectFromMessageHistory(this.value)" disabled>
+                            <option value="">Recent Messages</option>
+                        </select>
+                        <input type="text" id="world-message-input" placeholder="Enter world broadcast message..." disabled style="flex: 1;">
+                        <button id="send-msg-btn" onclick="sendWorldMessage()" disabled>Broadcast</button>
+                    </div>
                     </div>
 
                     <!-- Sidebar -->
@@ -215,22 +234,14 @@
                             <button id="hello-btn" onclick="helloCommand()" disabled>Hello</button>
                             <button id="stop-now-btn" onclick="stopNow()" disabled style="background-color: #d32f2f; margin-top: 10px;">Stop Server Now</button>
                         </section>
+
                     </aside>
                 </div>
-
-            <!-- Input Area Section (stays at bottom) -->
-            <div class="input-area">
-                <input type="text" id="command-input" placeholder="Enter command..." disabled>
-                <button id="send-btn" onclick="sendCommand()" disabled>Send</button>
             </div>
         </main>
-
-        <footer>
-            <p>ACE RCON Web Client v<span id="version">Loading...</span></p>
-            <p><a href="https://github.com/ACEmulator/ACE" target="_blank">ACE Emulator</a></p>
-        </footer>
     </div>
 
+    <script src="history-manager.js"></script>
     <script src="rcon-client.js"></script>
     <script src="ui.js"></script>
 </body>
