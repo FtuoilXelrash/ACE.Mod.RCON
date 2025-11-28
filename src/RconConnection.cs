@@ -13,7 +13,7 @@ public class RconConnection
     private bool isConnected = true;
 
     // Version read from Meta.json at startup
-    public static string ModVersion { get; set; } = "1.0.88";
+    public static string ModVersion { get; set; } = "1.0.92";
 
     public int ConnectionId => connectionId;
     public bool IsAuthenticated { get; set; } = false;

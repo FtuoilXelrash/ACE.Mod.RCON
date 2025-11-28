@@ -62,9 +62,9 @@ Edit `Settings.json`:
 - **WebRconEnabled**: Enable/disable Web RCON interface (WebSocket) - can be disabled independently from TCP RCON
 - **WebRconPort**: WebSocket HTTP server port (default: 9005)
 - **RconPassword**: Password for authentication (change this!)
-- **UseAceAuthentication**: Use ACE-style packet-based authentication instead of Rust-style URL-based auth (default: false)
-  - `false` (Rust-style): Password in WebSocket URL path (e.g., `ws://host:9005/password`) or first line of TCP connection
-  - `true` (ACE-style): Send `{"Command": "auth", "Password": "xxx"}` after connecting
+- **UseAceAuthentication**: Use ACE-style account-based authentication instead of Rust-style password-only auth (default: false)
+  - `false` (Rust-style): RCON password in WebSocket URL path (e.g., `ws://host:9005/password`) or first line of TCP connection
+  - `true` (ACE-style): Login with ACE account credentials via JSON `{"Command": "auth", "Name": "accountname", "Password": "password"}`. Only accounts with Developer/Admin access (AccessLevel >= 4) are allowed
 - **MaxConnections**: Maximum concurrent RCON connections (default: 10)
 - **ConnectionTimeoutSeconds**: Idle connection timeout in seconds (default: 300/5 minutes)
 - **EnableLogging**: Verbose logging of RCON operations to server console
@@ -82,9 +82,11 @@ Edit `Settings.json`:
 
 **ACE-style Authentication (UseAceAuthentication=true):**
 1. Open your browser to: `http://127.0.0.1:9005/` (local) or `http://<server-ip>:9005/` (remote)
-2. A login landing page will appear
-3. Enter your RCON password and click "Connect"
-4. Web client will authenticate via JSON packet
+2. A login landing page will appear with Account Name and Password fields
+3. Enter your ACE account name and password (account must have Developer or Admin access level)
+4. Web client connects and sends authentication via JSON packet
+5. Only accounts with AccessLevel >= 4 (Developer or Admin) are allowed access
+6. Invalid credentials keep user on login page with error message
 
 **Note:** Both TCP RCON (port 9004) and Web RCON (port 9005) accept connections from **all network interfaces** - accessible locally via 127.0.0.1 and remotely via any IP address the server is bound to. No admin privileges required.
 

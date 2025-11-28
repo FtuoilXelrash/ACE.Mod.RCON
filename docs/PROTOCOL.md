@@ -23,17 +23,25 @@ First message must be the plain-text password (not JSON). After server validates
 
 ### ACE-style Authentication (UseAceAuthentication=true)
 
-Password is sent via JSON authentication command after connecting.
+Account credentials are validated against the ACE server's admin accounts via JSON command.
 
 **WebSocket & TCP:**
-After connecting, send auth command:
+After connecting, send auth command with account name and password:
 ```json
 {
   "Command": "auth",
-  "Password": "your_password",
+  "Name": "account_name",
+  "Password": "account_password",
   "Identifier": 1
 }
 ```
+
+**Requirements:**
+- Account must exist in the ACE database (via DatabaseManager.Authentication)
+- Account must have admin access: AccessLevel >= 4 (Developer or Admin)
+- Password must match using ACE's PasswordMatches() method (supports BCrypt and SHA512)
+- Invalid credentials result in "error" status and immediate connection close
+- Non-admin accounts are rejected with appropriate error message
 
 Server responds with authentication status. All other commands must wait for successful authentication.
 

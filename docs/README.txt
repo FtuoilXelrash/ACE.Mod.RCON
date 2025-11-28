@@ -74,11 +74,13 @@ RconPassword (string)
   - Default: your_secure_password
 
 UseAceAuthentication (true/false)
-  - Use ACE-style packet-based authentication instead of Rust-style URL-based auth
+  - Use ACE-style account-based authentication instead of Rust-style password-only auth
   - Default: false
-  - false (Rust-style): Password in WebSocket URL path (e.g., ws://host:9005/password)
+  - false (Rust-style): RCON password in WebSocket URL path (e.g., ws://host:9005/password)
                         or first line of TCP connection
-  - true (ACE-style): Send {"Command": "auth", "Password": "xxx"} after connecting
+  - true (ACE-style): Login with ACE account credentials via JSON
+                      {"Command": "auth", "Name": "accountname", "Password": "password"}
+                      Only accounts with Developer/Admin access (AccessLevel >= 4) allowed
 
 MaxConnections (number)
   - Maximum concurrent RCON connections allowed
@@ -119,9 +121,11 @@ Rust-style Authentication (default, UseAceAuthentication=false):
 
 ACE-style Authentication (UseAceAuthentication=true):
 1. Open your browser to: http://127.0.0.1:9005/ (local) or http://<server-ip>:9005/ (remote)
-2. A login landing page will appear
-3. Enter your RCON password and click "Connect"
-4. Web client will authenticate via JSON packet
+2. A login landing page will appear with Account Name and Password fields
+3. Enter your ACE account name and password (account must have Developer or Admin access)
+4. Web client connects and authenticates via JSON packet
+5. Only accounts with AccessLevel >= 4 (Developer or Admin) are allowed access
+6. Invalid credentials keep user on login page with error message
 
 Note: Both TCP RCON (port 9004) and Web RCON (port 9005) accept connections from
 ALL network interfaces - accessible locally via 127.0.0.1 and remotely via any IP
@@ -230,10 +234,12 @@ Connection Management:
 SECURITY
 --------
 - Password-based authentication required
+- For ACE-style auth: Admin account credentials required (Developer/Admin access level)
 - Pre-authentication users cannot see console logs
 - Logs only broadcast to authenticated clients
 - Connection timeout prevents idle resource leaks
-- Invalid password keeps user on login page (no console access granted)
+- Invalid credentials keeps user on login page (no console access granted)
+- Wrong credentials cause connection to close immediately (prevents brute force)
 - Auth mode auto-detected from server (no user confusion with dropdown)
 - Stop Server Now requires explicit confirmation dialog
 
@@ -368,6 +374,19 @@ v1.0.82 - Protocol & Display Enhancements
   - WorldTime included in player events for accurate uptime calculation
   - Raw response logging when DebugMode enabled
   - Optimized RCON protocol commands for efficiency
+
+v1.0.92 - ACE Authentication Implementation
+  - Implemented ACE-style authentication (UseAceAuthentication setting)
+  - Support for ACE admin account credentials (Developer/Admin access level requirement)
+  - Access level validation - only Developer (level 4) and Admin (level 5) can access
+  - Security fix: Invalid credentials immediately close connection (prevents console access)
+  - Security fix: HELLO command now properly rejects error responses with promise rejection
+  - Login form auto-detects auth mode (username field shown only for ACE-style)
+  - Automatic HELLO command after successful authentication to populate sidebar
+  - Enhanced logging for authentication attempts and access level validation
+  - Login landing page with account/password fields for ACE authentication
+  - Maintains backward compatibility with Rust-style password-only authentication
+  - Separate validation for web client to prevent unauthenticated console access
 
 DOCUMENTATION
 --------------
