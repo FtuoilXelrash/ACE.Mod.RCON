@@ -9,11 +9,12 @@ let historyIndex = 0;
 let autoRefreshPlayers = true;
 let clientConfig = null;
 let useAceAuthentication = false; // Will be set from server config (auto-detected)
+let historyManagerReady = false; // Track when history manager is ready
 
 /**
  * Initialize the UI and WebSocket client
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('[UI] Initializing RCON Web Client');
 
     // Create RCON client (use current window location)
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize history manager for command and message history
-    initializeHistory();
+    await initializeHistory();
 
     // Restore auto-refresh checkbox state from localStorage
     const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
@@ -655,11 +656,25 @@ async function sendCommand() {
         commandInput.focus();
 
         // Add to history manager and update dropdown
-        console.log('[sendCommand] Adding to history:', command);
-        historyManager.addCommand(command);
-        console.log('[sendCommand] History after add:', historyManager.getCommands());
-        updateCommandHistoryDropdown();
-        console.log('[sendCommand] Dropdown updated');
+        console.log('[sendCommand] Attempting to add to history:', command);
+        console.log('[sendCommand] historyManagerReady:', historyManagerReady);
+        console.log('[sendCommand] typeof historyManager:', typeof historyManager);
+
+        if (historyManagerReady && historyManager) {
+            try {
+                historyManager.addCommand(command);
+                console.log('[sendCommand] ✓ Command added to history');
+                console.log('[sendCommand] History now contains:', historyManager.getCommands());
+                updateCommandHistoryDropdown();
+                console.log('[sendCommand] ✓ Dropdown updated');
+            } catch (e) {
+                console.error('[sendCommand] Error adding to history:', e);
+            }
+        } else {
+            console.warn('[sendCommand] History manager NOT ready');
+            console.warn('  - historyManagerReady:', historyManagerReady);
+            console.warn('  - historyManager exists:', !!historyManager);
+        }
 
         // Also maintain legacy command history for arrow key navigation
         commandHistory.push(command);
@@ -1460,8 +1475,12 @@ async function sendWorldMessage() {
         messageInput.focus();
 
         // Add to history manager and update dropdown
-        historyManager.addMessage(message);
-        updateMessageHistoryDropdown();
+        if (historyManagerReady && typeof historyManager !== 'undefined') {
+            historyManager.addMessage(message);
+            updateMessageHistoryDropdown();
+        } else {
+            console.warn('[sendWorldMessage] History manager not ready');
+        }
     }
 }
 
@@ -1515,15 +1534,28 @@ function selectFromMessageHistory(value) {
 async function initializeHistory() {
     try {
         console.log('[UI] Initializing history manager...');
+        console.log('[UI] historyManager type:', typeof historyManager);
+        console.log('[UI] historyManager object:', historyManager);
+
+        // historyManager is created in history-manager.js as a global
+        if (!historyManager) {
+            console.error('[UI] historyManager is null or undefined!');
+            return;
+        }
+
+        console.log('[UI] Calling historyManager.init()...');
         await historyManager.init();
+        console.log('[UI] historyManager.init() completed');
 
         // Update dropdowns after history is loaded
         updateCommandHistoryDropdown();
         updateMessageHistoryDropdown();
 
-        console.log('[UI] History manager initialized');
+        historyManagerReady = true;
+        console.log('[UI] ✓ History manager fully initialized and ready');
     } catch (error) {
-        console.error('[UI] Failed to initialize history manager:', error);
+        console.error('[UI] FAILED to initialize history manager:', error);
+        console.error('[UI] Error stack:', error.stack);
     }
 }
 

@@ -226,12 +226,17 @@
                                 <p style="margin-left: 15px; margin-top: 0; margin-bottom: 0;">Patch: <span id="ace-database-patch">-</span></p>
                             </div>
                         </section>
+                        <section class="rcon-commands-section">
+                            <h3>RCON Commands</h3>
+                            <button id="status-btn" onclick="statusCommand()" disabled>Status</button>
+                            <button id="hello-btn" onclick="helloCommand()" disabled>Hello</button>
+                        </section>
+
                         <section class="ace-commands-section">
+                            <h3>ACE Commands</h3>
                             <button id="ace-commands-btn" onclick="aceCommands()" disabled>ACE Commands</button>
                             <button id="list-players-btn" onclick="listPlayers()" disabled>List Players</button>
                             <button id="population-btn" onclick="population()" disabled>Population</button>
-                            <button id="status-btn" onclick="statusCommand()" disabled>Status</button>
-                            <button id="hello-btn" onclick="helloCommand()" disabled>Hello</button>
                             <button id="stop-now-btn" onclick="stopNow()" disabled style="background-color: #d32f2f; margin-top: 10px;">Stop Server Now</button>
                         </section>
 
