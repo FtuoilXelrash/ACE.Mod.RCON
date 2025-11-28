@@ -25,6 +25,8 @@ class RconClient {
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 42;  // Will be updated from server config
         this.password = null;  // For Rust-style URL auth
+        this.disableReconnect = false;  // Flag to disable auto-reconnect after successful auth
+        this.reconnectTimer = null;  // Timer ID for scheduled reconnection
     }
 
     /**
@@ -151,12 +153,23 @@ class RconClient {
                     // Check if connection was rejected due to auth failure (PolicyViolation close code = 1008)
                     const isAuthFailure = event.code === 1008; // WebSocketCloseStatus.PolicyViolation
 
+                    // Don't auto-reconnect if reconnect is disabled (after successful auth)
+                    if (this.disableReconnect) {
+                        console.log('[RconClient] Auto-reconnect is disabled - not reconnecting');
+                        if (this.reconnectTimer) {
+                            clearTimeout(this.reconnectTimer);
+                            this.reconnectTimer = null;
+                        }
+                        return;
+                    }
+
                     // Try to reconnect (but not for auth failures on initial connection from connect() call)
                     // Auth failures are detected by the caller
                     if (this.reconnectAttempts < this.maxReconnectAttempts && !isAuthFailure) {
                         this.reconnectAttempts++;
                         console.log(`[RconClient] Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-                        setTimeout(() => {
+                        this.reconnectTimer = setTimeout(() => {
+                            this.reconnectTimer = null;
                             this.connect().catch(err => console.error('[RconClient] Reconnect failed:', err));
                         }, this.reconnectDelay);
                     } else if (isAuthFailure) {
@@ -210,6 +223,14 @@ class RconClient {
                     resolve: (response) => {
                         if (response.Status === 'authenticated' || response.Status === 'success') {
                             this.isAuthenticated = true;
+                            // Disable auto-reconnect after successful authentication
+                            this.disableReconnect = true;
+                            this.reconnectAttempts = 0;
+                            // Clear any pending reconnection timer since we're authenticated now
+                            if (this.reconnectTimer) {
+                                clearTimeout(this.reconnectTimer);
+                                this.reconnectTimer = null;
+                            }
                             this.emit('authenticated', response);
                             resolve(response);
                         } else {
@@ -330,12 +351,18 @@ class RconClient {
      */
     disconnect() {
         console.log('[RconClient] Disconnecting...');
+        // Clear any pending reconnection timer
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
         if (this.ws) {
             this.ws.close();
             this.ws = null;
         }
         this.isConnected = false;
         this.isAuthenticated = false;
+        this.disableReconnect = false;  // Reset reconnect flag on disconnect
     }
 
     /**

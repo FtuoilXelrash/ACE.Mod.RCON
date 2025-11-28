@@ -71,21 +71,53 @@ document.addEventListener('DOMContentLoaded', function() {
     if (usernameGroup) {
         usernameGroup.style.display = 'flex';  // Show username field by default
     }
+
+    // Fetch server config on page load to detect auth mode and set correct login title
+    fetchServerConfig();
 });
+
+/**
+ * Fetch server configuration to detect auth mode
+ */
+async function fetchServerConfig() {
+    try {
+        console.log('[UI] Fetching server config on page load...');
+        await client.connect();
+        await client.getConfig();
+        // Config will trigger onServerConfig event which updates the UI
+        // Prevent auto-reconnect before disconnecting the temporary config connection
+        client.disableReconnect = true;
+        // Disconnect after getting config so login can establish fresh connection
+        client.disconnect();
+        // Re-enable reconnect for the actual login connection
+        client.disableReconnect = false;
+    } catch (error) {
+        console.log('[UI] Failed to fetch config on page load (will retry on login):', error);
+        // Silently fail - will try again when user clicks login
+        if (client.isConnected) {
+            client.disableReconnect = true;
+            client.disconnect();
+            client.disableReconnect = false;
+        }
+    }
+}
 
 /**
  * Update login page UI based on server's UseAceAuthentication setting
  */
 function updateAuthModeUI() {
+    const loginTitle = document.getElementById('login-title');
     const infoText = document.getElementById('login-info-text');
     const usernameGroup = document.getElementById('login-username-group');
 
     if (!useAceAuthentication) {
         // Rust-style: password only
+        loginTitle.textContent = 'Enter Your RCON Password';
         infoText.textContent = 'RCON Password Authentication is required before access can be granted';
         usernameGroup.style.display = 'none';
     } else {
         // ACE-style: username and password
+        loginTitle.textContent = 'Enter Your ACE Admin Credentials';
         infoText.textContent = 'ACE Login/Password Authentication is required before access can be granted';
         usernameGroup.style.display = 'flex';
     }
@@ -494,28 +526,51 @@ function onDisconnected() {
     addOutput('Disconnected from server.', 'info-message');
     disableCommands();
 
+    // Clear all server info
+    const serverNameEl = document.getElementById('server-name');
+    if (serverNameEl) {
+        serverNameEl.textContent = '';
+    }
+
+    const serverStatusEl = document.getElementById('server-status');
+    if (serverStatusEl) {
+        serverStatusEl.textContent = 'Not Connected';
+    }
+
+    const playerCountEl = document.getElementById('player-count');
+    if (playerCountEl) {
+        playerCountEl.textContent = '';
+    }
+
+    const uptimeEl = document.getElementById('uptime');
+    if (uptimeEl) {
+        uptimeEl.textContent = '';
+    }
+
+    const aceServerVersionEl = document.getElementById('ace-server-version');
+    if (aceServerVersionEl) {
+        aceServerVersionEl.textContent = '-';
+    }
+
+    const aceServerBuildEl = document.getElementById('ace-server-build');
+    if (aceServerBuildEl) {
+        aceServerBuildEl.textContent = '-';
+    }
+
+    const aceDatabaseBaseEl = document.getElementById('ace-database-base');
+    if (aceDatabaseBaseEl) {
+        aceDatabaseBaseEl.textContent = '-';
+    }
+
+    const aceDatabasePatchEl = document.getElementById('ace-database-patch');
+    if (aceDatabasePatchEl) {
+        aceDatabasePatchEl.textContent = '-';
+    }
+
     // Clear players list
     const playersList = document.getElementById('players-list');
     if (playersList) {
         playersList.innerHTML = '<div class="info-message">Players will appear here after authentication</div>';
-    }
-
-    // Reset player count
-    const playerCountEl = document.getElementById('player-count');
-    if (playerCountEl) {
-        playerCountEl.textContent = '0';
-    }
-
-    // Reset server status
-    const serverStatusEl = document.getElementById('server-status');
-    if (serverStatusEl) {
-        serverStatusEl.textContent = 'Disconnected';
-    }
-
-    // Reset uptime
-    const uptimeEl = document.getElementById('uptime');
-    if (uptimeEl) {
-        uptimeEl.textContent = '0s';
     }
 }
 

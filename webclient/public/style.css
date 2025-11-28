@@ -870,6 +870,7 @@ main > *:not(.tab-nav):not(.sidebar) {
     gap: 15px;
 }
 
+.login-box input[type="text"],
 .login-box input[type="password"] {
     background: #1a1a1a;
     border: 1px solid #444;
@@ -882,9 +883,14 @@ main > *:not(.tab-nav):not(.sidebar) {
     transition: border-color 0.3s;
 }
 
+.login-box input[type="text"]:focus,
 .login-box input[type="password"]:focus {
     border-color: var(--accent-color);
     box-shadow: 0 0 5px rgba(255, 107, 0, 0.3);
+}
+
+.login-box input::placeholder {
+    color: #666;
 }
 
 .login-box button {
