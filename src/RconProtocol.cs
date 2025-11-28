@@ -119,46 +119,93 @@ public static class RconProtocol
     }
 
     /// <summary>
-    /// Handle authentication request (ACE auth mode)
+    /// Handle authentication request
+    /// Supports both Rust-style (password only) and ACE-style (username + password)
     /// </summary>
     private static async Task<RconResponse> HandleAuthAsync(RconRequest request, RconConnection connection, Settings? settings = null)
     {
-        if (string.IsNullOrEmpty(request.Password))
+        bool useAceAuth = settings?.UseAceAuthentication ?? false;
+
+        if (useAceAuth)
         {
+            // ACE-style: require both account name (in Name field) and password
+            if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Password))
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = "Both account name and password required for ACE authentication"
+                };
+            }
+
+            // Use RconAuthenticator to verify ACE account
+            bool authenticated = await RconAuthenticator.AuthenticateAceAccountAsync(request.Name, request.Password);
+
+            if (!authenticated)
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = "Invalid account name or password, or account is not an admin"
+                };
+            }
+
+            // Mark connection as authenticated
+            connection.IsAuthenticated = true;
+
+            // Auto-fetch server status to populate sidebar
+            var statusData = GetServerStatus();
+
             return new RconResponse
             {
                 Identifier = request.Identifier,
-                Status = "error",
-                Message = "Password required for authentication"
+                Status = "authenticated",
+                Message = "ACE authentication successful",
+                Data = statusData
             };
         }
-
-        // Use RconAuthenticator to verify
-        bool authenticated = await RconAuthenticator.AuthenticateAsync(request.Password);
-
-        if (!authenticated)
+        else
         {
+            // Rust-style: password only
+            if (string.IsNullOrEmpty(request.Password))
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = "Password required for authentication"
+                };
+            }
+
+            // Use RconAuthenticator to verify
+            bool authenticated = await RconAuthenticator.AuthenticateAsync(request.Password);
+
+            if (!authenticated)
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = "Invalid password"
+                };
+            }
+
+            // Mark connection as authenticated
+            connection.IsAuthenticated = true;
+
+            // Auto-fetch server status to populate sidebar
+            var statusData = GetServerStatus();
+
             return new RconResponse
             {
                 Identifier = request.Identifier,
-                Status = "error",
-                Message = "Invalid password"
+                Status = "authenticated",
+                Message = "Authentication successful",
+                Data = statusData
             };
         }
-
-        // Mark connection as authenticated
-        connection.IsAuthenticated = true;
-
-        // Auto-fetch server status to populate sidebar
-        var statusData = GetServerStatus();
-
-        return new RconResponse
-        {
-            Identifier = request.Identifier,
-            Status = "authenticated",
-            Message = "Authentication successful",
-            Data = statusData
-        };
     }
 
     /// <summary>

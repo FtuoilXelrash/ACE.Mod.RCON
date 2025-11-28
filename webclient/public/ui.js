@@ -64,9 +64,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize color style element and restore saved colors
     createStyleElement();
 
-    // Show login page on load (no auto-connect - user must login first)
+    // Show login page on load
     showLoginPage();
-    updateAuthModeUI(); // Initialize UI based on server's auth mode
+    // Show both fields by default (will update based on server's auth mode after first attempt)
+    const usernameGroup = document.getElementById('login-username-group');
+    if (usernameGroup) {
+        usernameGroup.style.display = 'flex';  // Show username field by default
+    }
 });
 
 /**
@@ -90,7 +94,7 @@ function updateAuthModeUI() {
 /**
  * Handle login form submission
  */
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
     const password = document.getElementById('login-password').value;
     const username = document.getElementById('login-username')?.value || '';
@@ -100,37 +104,58 @@ function handleLogin(event) {
     loginBtn.disabled = true;
     loginError.style.display = 'none';
 
-    // Use server-detected auth mode
-    console.log('[UI] Using server-detected auth mode - UseAceAuthentication:', useAceAuthentication);
-
-    // If Rust-style, set password on client before connecting
-    if (!useAceAuthentication) {
-        client.setPassword(password);
-        // Save password to localStorage for future sessions
-        localStorage.setItem('rconPassword', password);
-    }
-
-    // Connect to server
-    connectToServer().then(() => {
-        // After connecting, handle authentication based on server's auth mode
-        if (useAceAuthentication) {
-            // ACE-style: use authenticate method with password (username is optional/future use)
-            console.log('[UI] Sending ACE-style auth command...');
-            client.authenticate(password).catch(err => {
-                console.error('[UI] Auth failed:', err);
-                loginError.textContent = err.message;
-                loginError.style.display = 'block';
-                loginBtn.disabled = false;
-            });
-        }
-        // For Rust-style, password is in URL so connection will be validated
-        // onConnected() will handle proceeding to authenticated state
-    }).catch(err => {
-        console.error('[UI] Connection failed:', err);
-        loginError.textContent = err.message;
+    if (!password) {
+        loginError.textContent = 'Password is required';
         loginError.style.display = 'block';
         loginBtn.disabled = false;
-    });
+        return;
+    }
+
+    try {
+        console.log('[UI] Attempting login...');
+
+        // Disconnect any existing connection first
+        if (client.isConnected) {
+            client.disconnect();
+        }
+
+        // Try ACE-style auth first if username is provided
+        if (username && username.trim()) {
+            console.log('[UI] Attempting ACE-style authentication with account:', username);
+
+            // Clear password from URL path (ACE auth doesn't use it)
+            client.password = null;
+
+            // Connect to /rcon endpoint (no password in URL)
+            await client.connect();
+
+            // Send ACE auth command
+            await client.authenticate(password, username);
+
+            // Send HELLO to get initial server state
+            console.log('[UI] Sending HELLO command after ACE authentication...');
+            await client.send('hello', []);
+            // Success - onAuthenticated() will handle showing console
+        } else {
+            console.log('[UI] Attempting Rust-style RCON authentication');
+
+            // Rust-style: password only, include in URL
+            client.setPassword(password);
+            localStorage.setItem('rconPassword', password);
+
+            // Connect with password in URL
+            await client.connect();
+
+            // Validate we're authenticated by sending HELLO
+            await client.send('hello', []);
+            // Success - onConnected() will handle showing console
+        }
+    } catch (err) {
+        console.error('[UI] Login failed:', err);
+        loginError.textContent = err.message || 'Login failed. Check password/account name.';
+        loginError.style.display = 'block';
+        loginBtn.disabled = false;
+    }
 }
 
 /**

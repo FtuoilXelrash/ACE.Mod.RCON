@@ -45,6 +45,52 @@ class RconClient {
     }
 
     /**
+     * Fetch server configuration (no auth required)
+     * @returns {Promise} Resolves with config data
+     */
+    async getConfig() {
+        return new Promise((resolve, reject) => {
+            if (!this.isConnected) {
+                reject(new Error('Not connected to server'));
+                return;
+            }
+
+            const requestId = ++this.requestId;
+            const message = {
+                Command: 'config',
+                Identifier: requestId
+            };
+
+            console.log('[RconClient] Fetching server config...');
+
+            try {
+                const timeout = setTimeout(() => {
+                    this.pendingRequests.delete(requestId);
+                    reject(new Error('Config request timeout'));
+                }, 10000);
+
+                this.pendingRequests.set(requestId, {
+                    resolve: (response) => {
+                        if (response.Status === 'success') {
+                            this.emit('server-config', response.Data);
+                            resolve(response.Data);
+                        } else {
+                            reject(new Error(response.Message || 'Failed to get config'));
+                        }
+                    },
+                    reject,
+                    timeout
+                });
+
+                this.ws.send(JSON.stringify(message));
+            } catch (error) {
+                this.pendingRequests.delete(requestId);
+                reject(error);
+            }
+        });
+    }
+
+    /**
      * Connect to RCON server
      * @returns {Promise} Resolves when connected
      */
@@ -133,7 +179,7 @@ class RconClient {
      * @param {string} password - RCON password
      * @returns {Promise} Resolves when authenticated
      */
-    authenticate(password) {
+    authenticate(password, accountName = null) {
         return new Promise((resolve, reject) => {
             if (!this.isConnected) {
                 reject(new Error('Not connected to server'));
@@ -146,6 +192,11 @@ class RconClient {
                 Password: password,
                 Identifier: requestId
             };
+
+            // For ACE-style auth, send account name as Name field
+            if (accountName) {
+                message.Name = accountName;
+            }
 
             console.log('[RconClient] Authenticating...');
 
