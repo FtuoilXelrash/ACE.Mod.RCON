@@ -375,7 +375,8 @@ public static class RconProtocol
                         { "Guid", player.Guid.Full },
                         { "Level", player.Level ?? 1 },
                         { "Race", player.HeritageGroup.ToString() },
-                        { "Location", player.Location?.ToLOCString() ?? "Unknown" }
+                        { "Location", player.Location?.ToLOCString() ?? "Unknown" },
+                        { "AccountName", player.Session?.Account ?? "Unknown" }
                     });
                 }
                 catch (Exception ex)
