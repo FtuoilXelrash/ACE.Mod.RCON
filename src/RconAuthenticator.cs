@@ -100,12 +100,16 @@ public static class RconAuthenticator
                 return false;
             }
 
+            ModManager.Log($"[RCON] Account '{accountName}' found - AccessLevel: {account.AccessLevel} (Developer={((uint)AccessLevel.Developer)}, Admin={((uint)AccessLevel.Admin)})", ModManager.LogLevel.Info);
+
             // Check if account has admin access (AccessLevel >= 4 = Developer or Admin)
             if (account.AccessLevel < (uint)AccessLevel.Developer)
             {
-                ModManager.Log($"[RCON] ACE authentication failed: account '{accountName}' is not an admin (AccessLevel: {account.AccessLevel})", ModManager.LogLevel.Warn);
+                ModManager.Log($"[RCON] ACE authentication REJECTED: account '{accountName}' is not an admin (AccessLevel: {account.AccessLevel}, Required: {(uint)AccessLevel.Developer})", ModManager.LogLevel.Warn);
                 return false;
             }
+
+            ModManager.Log($"[RCON] Account '{accountName}' has sufficient access level ({account.AccessLevel} >= {(uint)AccessLevel.Developer})", ModManager.LogLevel.Info);
 
             // Verify password using ACE's PasswordMatches method (supports both BCrypt and SHA512)
             bool passwordValid = account.PasswordMatches(password);

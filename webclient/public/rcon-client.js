@@ -232,7 +232,7 @@ class RconClient {
      * Send RCON command
      * @param {string} command - Command name
      * @param {Array} args - Command arguments
-     * @returns {Promise} Resolves with response
+     * @returns {Promise} Resolves with response, rejects if command fails
      */
     send(command, args = []) {
         return new Promise((resolve, reject) => {
@@ -257,9 +257,17 @@ class RconClient {
                     reject(new Error('Command timeout'));
                 }, 30000);
 
-                // Store pending request
+                // Store pending request with status-checking resolver
                 this.pendingRequests.set(requestId, {
-                    resolve,
+                    resolve: (response) => {
+                        // Reject if server returned an error status
+                        if (response.Status === 'error') {
+                            reject(new Error(response.Message || 'Command failed'));
+                        } else {
+                            // Resolve for success, authenticated, or other non-error statuses
+                            resolve(response);
+                        }
+                    },
                     reject,
                     timeout
                 });

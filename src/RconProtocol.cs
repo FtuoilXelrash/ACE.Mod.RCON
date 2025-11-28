@@ -131,6 +131,7 @@ public static class RconProtocol
             // ACE-style: require both account name (in Name field) and password
             if (string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Password))
             {
+                ModManager.Log($"[RCON] ACE auth attempt missing credentials - Name empty: {string.IsNullOrEmpty(request.Name)}, Password empty: {string.IsNullOrEmpty(request.Password)}");
                 return new RconResponse
                 {
                     Identifier = request.Identifier,
@@ -140,19 +141,26 @@ public static class RconProtocol
             }
 
             // Use RconAuthenticator to verify ACE account
+            ModManager.Log($"[RCON] ACE auth attempt for account: {request.Name}");
             bool authenticated = await RconAuthenticator.AuthenticateAceAccountAsync(request.Name, request.Password);
+            ModManager.Log($"[RCON] ACE auth result for {request.Name}: {(authenticated ? "SUCCESS" : "FAILED")}");
 
             if (!authenticated)
             {
+                // Close connection on auth failure (don't allow further attempts)
+                ModManager.Log($"[RCON] ACE auth failed - returning error response, will close connection");
                 return new RconResponse
                 {
                     Identifier = request.Identifier,
                     Status = "error",
                     Message = "Invalid account name or password, or account is not an admin"
                 };
+                // Note: Connection will be closed by RconHttpServer after sending this error response
+                // due to WebSocketCloseStatus.PolicyViolation being set
             }
 
             // Mark connection as authenticated
+            ModManager.Log($"[RCON] ACE auth succeeded for {request.Name}, marking connection as authenticated");
             connection.IsAuthenticated = true;
 
             // Auto-fetch server status to populate sidebar

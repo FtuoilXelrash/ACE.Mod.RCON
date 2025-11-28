@@ -310,6 +310,31 @@ public class RconHttpServer
                     return;
                 }
             }
+            else
+            {
+                // ACE-style authentication requires client to send auth command
+                // But we must validate at handshake that the path is correct format
+                // For ACE auth, path should be /rcon only, no password in URL
+                string path = request.Path;
+
+                if (path != "/rcon")
+                {
+                    // Wrong path format for ACE auth mode
+                    ModManager.Log($"[RCON] WebSocket ACE auth: invalid path '{path}', expected '/rcon'");
+                    var errorResponse = new RconResponse
+                    {
+                        Identifier = 0,
+                        Status = "error",
+                        Message = "Invalid connection path for ACE authentication. Connect to /rcon"
+                    };
+                    await SendResponseAsync(webSocket, errorResponse);
+                    await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Invalid connection path", CancellationToken.None);
+                    UnregisterWebSocket(webSocket);
+                    return;
+                }
+
+                ModManager.Log($"[RCON] WebSocket ACE-style auth initialized, waiting for auth command");
+            }
 
             // Handle WebSocket in background
             await HandleWebSocketConnectionAsync(webSocket, wsConnection, cancellationToken);
@@ -378,6 +403,9 @@ public class RconHttpServer
                         // Handle command
                         var response = await RconProtocol.HandleCommandAsync(request, wsConnection, settings);
 
+                        if (settings.EnableLogging)
+                            ModManager.Log($"[RCON] Response - Command: {request.Command}, Status: {response.Status}, IsAuthenticated: {wsConnection.IsAuthenticated}");
+
                         // Track authentication status for broadcast filtering
                         if (wsConnection.IsAuthenticated)
                         {
@@ -386,6 +414,14 @@ public class RconHttpServer
 
                         // Send response back through WebSocket
                         await SendResponseAsync(webSocket, response);
+
+                        // If this was an auth attempt that failed, close the connection (security measure)
+                        if ((request.Command == "auth") && (response.Status == "error"))
+                        {
+                            ModManager.Log($"[RCON] Authentication failed, closing WebSocket connection");
+                            await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Authentication failed", CancellationToken.None);
+                            break;
+                        }
                     }
                     catch (WebSocketException wex) when (wex.Message.Contains("closed") || wex.Message.Contains("Aborted") || wex.Message.Contains("invalid state"))
                     {

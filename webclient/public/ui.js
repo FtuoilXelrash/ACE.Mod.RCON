@@ -130,12 +130,9 @@ async function handleLogin(event) {
             await client.connect();
 
             // Send ACE auth command
+            // Auth response includes server status data, so we don't need separate HELLO
             await client.authenticate(password, username);
-
-            // Send HELLO to get initial server state
-            console.log('[UI] Sending HELLO command after ACE authentication...');
-            await client.send('hello', []);
-            // Success - onAuthenticated() will handle showing console
+            // Success - onAuthenticated() will handle showing console and displaying auth response data
         } else {
             console.log('[UI] Attempting Rust-style RCON authentication');
 
@@ -241,46 +238,24 @@ async function connectToServer() {
  * Called when WebSocket connects
  */
 function onConnected() {
-    console.log('[UI] WebSocket connected, auth mode - UseAceAuthentication:', useAceAuthentication);
+    console.log('[UI] WebSocket connected');
     updateStatus('connected', 'Connected - Authenticating...');
 
-    if (!useAceAuthentication) {
-        // For Rust-style auth, password is in URL
-        // Server validates and either:
-        // 1. Closes connection immediately with error if invalid
-        // 2. Allows connection if valid
-        // We wait for HELLO response to confirm auth succeeded
-        console.log('[UI] Connected with Rust-style auth (password in URL) - waiting for server validation...');
-        // Fetch HELLO data to populate sidebar (this also confirms auth worked)
-        client.send('hello', []).then(response => {
-            // If HELLO succeeds, auth must have succeeded
-            client.isAuthenticated = true;
-            handleAuthenticationComplete(response);
-        }).catch(err => {
-            console.error('[UI] Failed to get hello (auth likely failed):', err);
-            const loginError = document.getElementById('login-error');
-            const loginBtn = document.getElementById('login-btn');
-            if (loginError) {
-                loginError.textContent = 'Authentication failed - Invalid password';
-                loginError.style.display = 'block';
-            }
-            if (loginBtn) loginBtn.disabled = false;
-            // Close connection and show login page
-            showLoginPage();
-            client.ws.close();
-        });
-    } else {
-        // For ACE-style, we're waiting for auth command response
-        console.log('[UI] Connected, waiting for ACE auth...');
-        addOutput('Connected to RCON server. Sending authentication...', 'info-message');
-    }
+    // Don't send HELLO here - let handleLogin control the auth flow
+    // For Rust-style: handleLogin will send HELLO
+    // For ACE-style: handleLogin will send auth command
 }
 
 /**
  * Called when authenticated (either via Rust-style connection or ACE auth command)
  */
 function onAuthenticated(authResponse) {
-    console.log('[UI] Authenticated');
+    console.log('[UI] Authenticated event fired, client.isAuthenticated:', client.isAuthenticated);
+    // Safety check: ensure client's isAuthenticated flag is set before showing console
+    if (!client.isAuthenticated) {
+        console.error('[UI] SECURITY: onAuthenticated() fired but client.isAuthenticated is false!');
+        return;
+    }
     handleAuthenticationComplete(authResponse);
 }
 
@@ -288,6 +263,15 @@ function onAuthenticated(authResponse) {
  * Handle successful authentication (common for both auth modes)
  */
 function handleAuthenticationComplete(authResponse) {
+    // Safety check: only show console if we're actually authenticated
+    if (!client.isAuthenticated) {
+        console.error('[UI] SECURITY: handleAuthenticationComplete() called but not authenticated!');
+        console.log('[UI] Closing connection and returning to login');
+        client.ws.close();
+        showLoginPage();
+        return;
+    }
+
     updateStatus('authenticated', 'Authenticated');
 
     // Hide login page
@@ -303,6 +287,22 @@ function handleAuthenticationComplete(authResponse) {
     if (authResponse && authResponse.Data) {
         updateSidebarPanel(authResponse);
     }
+
+    // Fetch fresh server state via HELLO command
+    client.send('hello', []).then(response => {
+        console.log('[UI] HELLO response received');
+        // Update sidebar with fresh data from HELLO
+        if (response && response.Data) {
+            updateSidebarPanel(response);
+        }
+        // Display players if in HELLO response
+        if (response.Data && response.Data.OnlinePlayers) {
+            displayPlayers({ players: response.Data.OnlinePlayers });
+        }
+    }).catch(err => {
+        console.warn('[UI] HELLO command failed (non-critical):', err);
+        // Don't error out - we already have auth data
+    });
 
     // Fetch client configuration from server
     setTimeout(() => {
