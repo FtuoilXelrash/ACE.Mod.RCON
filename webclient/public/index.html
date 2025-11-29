@@ -45,6 +45,7 @@
             <!-- Tab Navigation (spans full width) -->
             <div class="tab-nav">
                 <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
+                <button class="tab-button" onclick="switchTab('chat-tab')">Server Chat</button>
                 <button class="tab-button" onclick="switchTab('server-info-tab')">Server Info</button>
                 <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
                 <button class="tab-button" onclick="switchTab('bans-tab')">Bans</button>
@@ -81,6 +82,62 @@
                             </select>
                             <input type="text" id="world-message-input" placeholder="Enter world broadcast message..." disabled style="flex: 1;">
                             <button id="send-msg-btn" onclick="sendWorldMessage()" disabled>Broadcast</button>
+                        </div>
+                    </section>
+
+                    <!-- Server Chat Tab -->
+                    <section id="chat-tab" class="tab-content">
+                        <div style="display: flex; gap: 20px; overflow: hidden; flex: 1; min-height: 0;">
+                            <!-- Chat Display Area -->
+                            <div style="flex: 1 1 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+                                <div id="chat-output" class="output">
+                                    <div class="info-message">
+                                        Waiting for chat messages...
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Chat Sidebar (filters) -->
+                            <aside id="chat-sidebar" class="sidebar">
+                                <section style="padding: 15px;">
+                                    <h3 style="margin-top: 0; color: #fff;">Show Chat Filters</h3>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; color: #aaa; cursor: pointer;">
+                                            <input type="checkbox" id="chat-filter-general" checked onchange="updateChatFilters()">
+                                            <span>General</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; color: #aaa; cursor: pointer;">
+                                            <input type="checkbox" id="chat-filter-guild" checked onchange="updateChatFilters()">
+                                            <span>Guild (Allegiance)</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; color: #aaa; cursor: pointer;">
+                                            <input type="checkbox" id="chat-filter-trade" checked onchange="updateChatFilters()">
+                                            <span>Trade</span>
+                                        </label>
+                                    </div>
+                                    <h3 style="margin-top: 20px; color: #fff; margin-bottom: 15px;">Chat Colors</h3>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <label style="color: #888; font-size: 12px; flex: 1;">General:</label>
+                                            <input type="color" id="chat-color-general" value="#00ff00" onchange="updateChatColors()" style="width: 40px; height: 30px; cursor: pointer;">
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <label style="color: #888; font-size: 12px; flex: 1;">Guild:</label>
+                                            <input type="color" id="chat-color-guild" value="#00ffff" onchange="updateChatColors()" style="width: 40px; height: 30px; cursor: pointer;">
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <label style="color: #888; font-size: 12px; flex: 1;">Trade:</label>
+                                            <input type="color" id="chat-color-trade" value="#ffff00" onchange="updateChatColors()" style="width: 40px; height: 30px; cursor: pointer;">
+                                        </div>
+                                    </div>
+                                    <h3 style="margin-top: 20px; color: #fff; margin-bottom: 15px;">Display Options</h3>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; color: #aaa; cursor: pointer;">
+                                            <input type="checkbox" id="chat-show-timestamp" checked onchange="updateChatOptions()">
+                                            <span>Show Timestamp</span>
+                                        </label>
+                                    </div>
+                                </section>
+                            </aside>
                         </div>
                     </section>
 

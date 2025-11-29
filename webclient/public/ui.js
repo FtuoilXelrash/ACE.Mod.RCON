@@ -91,6 +91,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load console filters from localStorage
     loadConsoleFilters();
 
+    // Initialize chat settings from localStorage
+    initializeChatSettings();
+
     // Restore auto-refresh checkbox state from localStorage
     const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
     if (autoRefreshCheckbox) {
@@ -1467,12 +1470,20 @@ function banSelectedPlayer() {
 function handleLogMessage(response) {
     // Parse message tags and apply color based on tag content
     const message = response.Message;
+
+    // Try to route chat messages to the chat tab instead of console
+    if (message.includes('[CHAT]')) {
+        const chatType = extractChatType(message);
+        if (chatType) {
+            addChatMessage(message, chatType);
+            return; // Don't add to console
+        }
+    }
+
     let className = `${response.Status}-output`; // Default to log level color
 
     // Check for message tags and override color if found
-    if (message.includes('[CHAT]')) {
-        className = 'log-chat';
-    } else if (message.includes('[AUDIT]')) {
+    if (message.includes('[AUDIT]')) {
         className = 'log-audit';
     } else if (message.includes('[SYSTEM]')) {
         className = 'log-system';
@@ -2187,6 +2198,235 @@ function updateBanActionsSidebar() {
         const detailsDiv = document.getElementById('ban-details-info');
         if (detailsDiv) detailsDiv.innerHTML = '<p style="margin: 0; text-align: center;">No banned account selected</p>';
     }
+}
+
+/**
+ * Initialize chat filters and colors from localStorage
+ */
+function initializeChatSettings() {
+    const savedFilters = JSON.parse(localStorage.getItem('chatFilters')) || {
+        general: true,
+        guild: true,
+        trade: true
+    };
+
+    const savedColors = JSON.parse(localStorage.getItem('chatColors')) || {
+        general: '#00ff00',
+        guild: '#00ffff',
+        trade: '#ffff00'
+    };
+
+    const savedOptions = JSON.parse(localStorage.getItem('chatOptions')) || {
+        showTimestamp: true
+    };
+
+    // Set filter checkboxes
+    document.getElementById('chat-filter-general').checked = savedFilters.general;
+    document.getElementById('chat-filter-guild').checked = savedFilters.guild;
+    document.getElementById('chat-filter-trade').checked = savedFilters.trade;
+
+    // Set color pickers
+    document.getElementById('chat-color-general').value = savedColors.general;
+    document.getElementById('chat-color-guild').value = savedColors.guild;
+    document.getElementById('chat-color-trade').value = savedColors.trade;
+
+    // Set timestamp checkbox
+    const timestampCheckbox = document.getElementById('chat-show-timestamp');
+    if (timestampCheckbox) {
+        timestampCheckbox.checked = savedOptions.showTimestamp;
+    }
+}
+
+/**
+ * Update chat filter settings
+ */
+function updateChatFilters() {
+    const filters = {
+        general: document.getElementById('chat-filter-general').checked,
+        guild: document.getElementById('chat-filter-guild').checked,
+        trade: document.getElementById('chat-filter-trade').checked
+    };
+
+    localStorage.setItem('chatFilters', JSON.stringify(filters));
+
+    // Reapply filters to existing chat messages
+    rerenderChatMessages();
+}
+
+/**
+ * Update chat color settings
+ */
+function updateChatColors() {
+    const colors = {
+        general: document.getElementById('chat-color-general').value,
+        guild: document.getElementById('chat-color-guild').value,
+        trade: document.getElementById('chat-color-trade').value
+    };
+
+    localStorage.setItem('chatColors', JSON.stringify(colors));
+
+    // Reapply colors to existing chat messages
+    rerenderChatMessages();
+}
+
+/**
+ * Update chat display options
+ */
+function updateChatOptions() {
+    const showTimestamp = document.getElementById('chat-show-timestamp').checked;
+
+    const options = {
+        showTimestamp: showTimestamp
+    };
+
+    localStorage.setItem('chatOptions', JSON.stringify(options));
+
+    // Reapply options to existing chat messages
+    rerenderChatMessages();
+}
+
+/**
+ * Extract chat type from message
+ * Format: [CHAT][Type] where Type = General, Guild/Allegiance, or Trade
+ */
+function extractChatType(message) {
+    const match = message.match(/\[CHAT\]\[([^\]]+)\]/);
+    if (match) {
+        const type = match[1].toLowerCase();
+        if (type === 'general') return 'general';
+        if (type === 'allegiance' || type === 'guild') return 'guild';
+        if (type === 'trade') return 'trade';
+    }
+    return null;
+}
+
+/**
+ * Add a message to the chat output
+ */
+function addChatMessage(message, type) {
+    const chatOutput = document.getElementById('chat-output');
+
+    // Remove info message if present
+    const infoMsg = chatOutput.querySelector('.info-message');
+    if (infoMsg) infoMsg.remove();
+
+    // Get filter and color settings
+    const filters = JSON.parse(localStorage.getItem('chatFilters')) || {
+        general: true,
+        guild: true,
+        trade: true
+    };
+
+    const colors = JSON.parse(localStorage.getItem('chatColors')) || {
+        general: '#00ff00',
+        guild: '#00ffff',
+        trade: '#ffff00'
+    };
+
+    const options = JSON.parse(localStorage.getItem('chatOptions')) || {
+        showTimestamp: true
+    };
+
+    // Check if this chat type should be displayed
+    if (!filters[type]) {
+        return; // Don't display this chat type
+    }
+
+    // Strip the handler prefix
+    let cleanMessage = message.replace(/^\[ACE\.Server\.Network\.Handlers\.TurbineChatHandler\]\s+/, '');
+    // Remove just the [CHAT] part, keep [Type]
+    cleanMessage = cleanMessage.replace(/^\[CHAT\]/, '');
+
+    // Add timestamp if enabled
+    if (options.showTimestamp) {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        cleanMessage = `[${timeStr}] ${cleanMessage}`;
+    }
+
+    // Create message element
+    const msgDiv = document.createElement('div');
+    msgDiv.style.color = colors[type];
+    msgDiv.style.marginBottom = '2px';
+    msgDiv.style.fontSize = '12px';
+    msgDiv.style.wordWrap = 'break-word';
+    msgDiv.className = `chat-message chat-type-${type}`;
+    msgDiv.textContent = cleanMessage;
+    msgDiv.dataset.originalMessage = message; // Store original for rerenders
+    msgDiv.dataset.chatType = type;
+
+    chatOutput.appendChild(msgDiv);
+
+    // Auto-scroll to bottom
+    chatOutput.scrollTop = chatOutput.scrollHeight;
+}
+
+/**
+ * Rerender all chat messages (used when filters or colors change)
+ */
+function rerenderChatMessages() {
+    const chatOutput = document.getElementById('chat-output');
+
+    // Get all current chat messages
+    const messages = chatOutput.querySelectorAll('.chat-message');
+
+    // Get current filters, colors, and options
+    const filters = JSON.parse(localStorage.getItem('chatFilters')) || {
+        general: true,
+        guild: true,
+        trade: true
+    };
+
+    const colors = JSON.parse(localStorage.getItem('chatColors')) || {
+        general: '#00ff00',
+        guild: '#00ffff',
+        trade: '#ffff00'
+    };
+
+    const options = JSON.parse(localStorage.getItem('chatOptions')) || {
+        showTimestamp: true
+    };
+
+    // Update visibility, colors, and text content
+    messages.forEach(msgDiv => {
+        const chatType = msgDiv.dataset.chatType;
+        const originalMessage = msgDiv.dataset.originalMessage;
+
+        if (chatType && originalMessage) {
+            if (filters[chatType]) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.color = colors[chatType];
+
+                // Rebuild the message text with current options
+                let cleanMessage = originalMessage.replace(/^\[ACE\.Server\.Network\.Handlers\.TurbineChatHandler\]\s+/, '');
+                // Remove just the [CHAT] part, keep [Type]
+                cleanMessage = cleanMessage.replace(/^\[CHAT\]/, '');
+                if (options.showTimestamp) {
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    cleanMessage = `[${timeStr}] ${cleanMessage}`;
+                }
+                msgDiv.textContent = cleanMessage;
+            } else {
+                msgDiv.style.display = 'none';
+            }
+        }
+    });
+}
+
+/**
+ * Process incoming log message and route to appropriate handler
+ */
+function routeLogMessage(message) {
+    // Check if this is a chat message
+    if (message.includes('[CHAT]')) {
+        const chatType = extractChatType(message);
+        if (chatType) {
+            addChatMessage(message, chatType);
+            return true; // Handled as chat message
+        }
+    }
+    return false; // Not a chat message, handle as console
 }
 
 console.log('[ui.js] UI module loaded');
