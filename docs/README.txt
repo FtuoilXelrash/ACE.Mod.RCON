@@ -164,17 +164,18 @@ hello       - Get initial server state (status, version, player list,
               database info)
 status      - Get lean server status for periodic polling (no player list)
 players     - Get current player list and count
-stop-now    - Stop the ACE server (requires confirmation in web client)
-help        - Display available commands
+help        - Display available ACE console commands
 
 Common ACE Console Commands (via passthrough)
 ----------------------------------------------
 acecommands - Display available ACE commands
 listplayers - List online players
-population  - Show player population info
+pop         - Show player population info (web client button labeled "Population")
+stop-now    - Stop the ACE server (requires confirmation in web client)
 rcon reload - Reload RCON mod settings without server restart
 world broadcast "message" - Broadcast message to all players
-Any other ACE console command (e.g., portal create, player summon, etc.)
+Any other ACE console command - See ACE Commands List:
+              https://github.com/ACEmulator/ACE/wiki/ACE-Commands
 
 Command Passthrough
 -------------------

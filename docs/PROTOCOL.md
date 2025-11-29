@@ -340,14 +340,14 @@ Get list of online players with player count. Used for manual refresh or automat
 - **AccountName** (string): Account name associated with the character
 - **Location** (string): Landblock coordinates (LOCString format)
 
-### stop-now
+### help
 
-Stop the ACE server immediately.
+Display available ACE console commands. This is a passthrough to the ACE server's help command.
 
 **Request:**
 ```json
 {
-  "Command": "stop-now",
+  "Command": "help",
   "Identifier": 4
 }
 ```
@@ -357,31 +357,32 @@ Stop the ACE server immediately.
 {
   "Identifier": 4,
   "Status": "success",
-  "Message": "Server shutdown initiated",
+  "Message": "Available commands:\nacecommands - Display available ACE commands\nlistplayers - List online players\n... [full list of ACE commands]",
   "Debug": false
 }
 ```
 
-**Note:** This command requires authentication and should be protected by a confirmation dialog on the client side.
+## ACE Console Command Passthrough
 
-### help
+All ACE server console commands are available through RCON command passthrough. Simply send the command name and any arguments as parameters. For a complete list of available ACE commands, see:
 
-Display available commands.
+**[ACE Commands List - GitHub Wiki](https://github.com/ACEmulator/ACE/wiki/ACE-Commands)**
 
-**Request:**
+**Example Request:**
 ```json
 {
-  "Command": "help",
-  "Identifier": 5
+  "Command": "world",
+  "Args": ["broadcast", "Server maintenance in 5 minutes"],
+  "Identifier": 10
 }
 ```
 
-**Response:**
+**Example Response:**
 ```json
 {
-  "Identifier": 5,
+  "Identifier": 10,
   "Status": "success",
-  "Message": "Available commands:\nconfig - Get client configuration\nstatus - Get server status\n... [full list of commands]",
+  "Message": "Broadcast: Server maintenance in 5 minutes",
   "Debug": false
 }
 ```
