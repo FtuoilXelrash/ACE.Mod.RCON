@@ -20,8 +20,7 @@ FEATURES
 ✅ Command passthrough to ACE CommandManager (execute ANY console command)
 ✅ Server status monitoring (uptime, player count, ACE version, database
    versions)
-✅ Online player list with character details (GUID, level, location)
-✅ Loaded landblock information
+✅ Online player list with character details (name, level, race, account name)
 ✅ Real-time console interface with server log streaming
 ✅ Player event detection (login/logoff with auto-refresh and real-time uptime
    updates)
@@ -31,9 +30,11 @@ FEATURES
 ✅ Configurable reconnection settings (attempts and delay)
 ✅ Auto-refresh persistence via browser local storage
 ✅ Security: Invalid password keeps user on login page, no console access
+✅ Quick command buttons for common operations (Status, Hello, ACE Commands, List Players, Population, Open World, Close World)
 ✅ Stop Server Now button with confirmation dialog
-✅ Quick command buttons for common operations
 ✅ Command and message history with dropdown selectors
+✅ Console message filtering (12 configurable module filters)
+✅ Timestamp and ACE Module display options
 ✅ Tab-specific sidebars for Console, Players, and Configuration tabs
 ✅ Responsive input layout matching console window width
 
@@ -124,9 +125,10 @@ Accessing the Web Client
 Rust-style Authentication (default, UseAceAuthentication=false):
 1. Open your browser to: http://127.0.0.1:9005/ (local) or
    http://<server-ip>:9005/ (remote)
-2. The web client automatically authenticates using the password in the URL path
-3. If no saved password, the browser will prompt or you can manually connect to:
-   ws://host:9005/your_password
+2. A login page will appear with Password field
+3. Enter your RCON password and click Connect (or manually connect to
+   ws://host:9005/your_password)
+4. Password is stored in browser localStorage for future sessions
 
 ACE-style Authentication (UseAceAuthentication=true):
 1. Open your browser to: http://127.0.0.1:9005/ (local) or
@@ -159,18 +161,20 @@ Protocol Commands
 -----------------
 config      - Get client configuration and auth mode
 hello       - Get initial server state (status, version, player list,
-              database info) on authentication
+              database info)
 status      - Get lean server status for periodic polling (no player list)
 players     - Get current player list and count
+stop-now    - Stop the ACE server (requires confirmation in web client)
+help        - Display available commands
 
-Common Examples
----------------
+Common ACE Console Commands (via passthrough)
+----------------------------------------------
 acecommands - Display available ACE commands
 listplayers - List online players
 population  - Show player population info
-help        - Display available commands
-Any other ACE console command (e.g., world broadcast "message", portal create,
-etc.)
+rcon reload - Reload RCON mod settings without server restart
+world broadcast "message" - Broadcast message to all players
+Any other ACE console command (e.g., portal create, player summon, etc.)
 
 Command Passthrough
 -------------------
@@ -209,11 +213,12 @@ Console Tab
 
 Players Tab
 -----------
-- Online player list with details (name, level, race, location)
+- Online player list with details (name, level, race, account name)
 - Player count display
 - Manual refresh button
 - Auto-refresh on player login/logoff (configurable)
 - Auto-refresh preference persists across page reloads
+- Boot and Ban player buttons (admin actions)
 
 Configuration Tab
 -----------------
@@ -240,8 +245,7 @@ Server Info Sidebar
   login/logoff
 - ACE Server version and build number
 - World Database Base and Patch versions
-- Quick command buttons (ACE Commands, List Players, Population, Status,
-  Hello)
+- Quick command buttons (Status, Hello, ACE Commands, List Players, Population, Open World, Close World)
 - Stop Server Now button with confirmation dialog
 
 BUILDING

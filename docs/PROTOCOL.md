@@ -91,11 +91,21 @@ Server responds with authentication status. All other commands must wait for suc
 
 Authenticate with the server.
 
-**Request:**
+**Rust-style Request:**
 ```json
 {
   "Command": "auth",
   "Password": "your_password",
+  "Identifier": 1
+}
+```
+
+**ACE-style Request:**
+```json
+{
+  "Command": "auth",
+  "Name": "admin_account",
+  "Password": "account_password",
   "Identifier": 1
 }
 ```
@@ -112,7 +122,11 @@ Authenticate with the server.
     "CurrentPlayers": 5,
     "MaxPlayers": 255,
     "Uptime": "1d 3h 45m 12s",
-    "WorldTime": "2024-11-25T10:30:45.1234567Z"
+    "WorldTime": "2024-11-25T10:30:45.1234567Z",
+    "AceServerVersion": "1.72",
+    "AceServerBuild": 4719,
+    "AceDatabaseBaseVersion": 90001,
+    "AceDatabasePatchVersion": 2022022
   },
   "Debug": false
 }
@@ -149,7 +163,6 @@ Get client configuration and authentication mode. Allows clients to auto-detect 
   "Status": "success",
   "Message": "Client configuration",
   "Data": {
-    "Version": "1.0.88",
     "RconEnabled": true,
     "WebRconEnabled": true,
     "MaxConnections": 10,
@@ -166,7 +179,6 @@ Get client configuration and authentication mode. Allows clients to auto-detect 
 ```
 
 **Data Fields:**
-- **Version** (string): RCON mod version
 - **RconEnabled** (bool): TCP RCON server status
 - **WebRconEnabled** (bool): Web RCON (WebSocket) status
 - **MaxConnections** (int): Maximum concurrent connections allowed
@@ -325,7 +337,54 @@ Get list of online players with player count. Used for manual refresh or automat
 - **Guid** (string): Unique player GUID (hex format)
 - **Level** (int): Character level
 - **Race** (string): Heritage group/race
+- **AccountName** (string): Account name associated with the character
 - **Location** (string): Landblock coordinates (LOCString format)
+
+### stop-now
+
+Stop the ACE server immediately.
+
+**Request:**
+```json
+{
+  "Command": "stop-now",
+  "Identifier": 4
+}
+```
+
+**Response:**
+```json
+{
+  "Identifier": 4,
+  "Status": "success",
+  "Message": "Server shutdown initiated",
+  "Debug": false
+}
+```
+
+**Note:** This command requires authentication and should be protected by a confirmation dialog on the client side.
+
+### help
+
+Display available commands.
+
+**Request:**
+```json
+{
+  "Command": "help",
+  "Identifier": 5
+}
+```
+
+**Response:**
+```json
+{
+  "Identifier": 5,
+  "Status": "success",
+  "Message": "Available commands:\nconfig - Get client configuration\nstatus - Get server status\n... [full list of commands]",
+  "Debug": false
+}
+```
 
 ## Error Handling
 
@@ -420,10 +479,9 @@ All commands except `auth` require authentication.
 1. Client connects via WebSocket with password in URL path: `ws://host:9005/password`
 2. Server validates password from URL path during HTTP upgrade
 3. If validation fails, connection is rejected with WebSocket close code 1008 (PolicyViolation)
-4. If validation succeeds, connection is established but client is not yet marked authenticated
-5. Client automatically sends HELLO command to validate authentication
-6. If HELLO succeeds, client is authenticated and receives initial server state
-7. All subsequent commands require authenticated connection
+4. If validation succeeds, connection is established and marked authenticated
+5. Client can immediately send commands without additional authentication
+6. All commands require authenticated connection (non-authenticated connections rejected)
 
 ### ACE-style Authentication Flow (UseAceAuthentication=true)
 
@@ -677,10 +735,3 @@ class RconClient
 - Log connection errors for debugging
 - Notify user of persistent connection failures
 
-## Future Extensions
-
-Planned for Phase 2:
-- Broadcast message subscriptions
-- Command scheduling and queuing
-- Server event filtering
-- More granular command access control
