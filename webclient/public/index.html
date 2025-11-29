@@ -44,9 +44,9 @@
         <main>
             <!-- Tab Navigation (spans full width) -->
             <div class="tab-nav">
+                <button class="tab-button" onclick="switchTab('server-info-tab')">Server Info</button>
                 <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
                 <button class="tab-button" onclick="switchTab('chat-tab')">Server Chat</button>
-                <button class="tab-button" onclick="switchTab('server-info-tab')">Server Info</button>
                 <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
                 <button class="tab-button" onclick="switchTab('bans-tab')">Bans</button>
                 <button class="tab-button" onclick="switchTab('config-tab')">Configuration</button>
@@ -56,6 +56,54 @@
             <div style="display: flex; flex: 1 1 100%; gap: 20px; overflow: hidden; min-height: 0; height: auto;">
                 <!-- Tabs Area -->
                 <div style="flex: 1 1 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+                    <!-- Server Info Tab -->
+                    <section id="server-info-tab" class="tab-content">
+                        <div style="padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 25px;">
+                            <div>
+                                <h2 style="margin: 0 0 20px 0; color: #fff; font-size: 24px;">Server Status</h2>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #ff9800; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Server Name</div>
+                                        <div style="color: #fff; font-size: 18px; font-weight: bold;" id="server-name">Loading...</div>
+                                    </div>
+                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #4caf50; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Status</div>
+                                        <div style="color: #4caf50; font-size: 18px; font-weight: bold;" id="server-status">Offline</div>
+                                    </div>
+                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #2196f3; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Player Count</div>
+                                        <div style="color: #2196f3; font-size: 18px; font-weight: bold;" id="player-count">0</div>
+                                    </div>
+                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #9c27b0; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Uptime</div>
+                                        <div style="color: #9c27b0; font-size: 18px; font-weight: bold;" id="uptime">0s</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 style="margin: 0 0 15px 0; color: #fff; font-size: 18px;">ACE Server Version</h3>
+                                <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #ff9800; border-radius: 4px; color: #aaa;">
+                                    <div style="font-size: 16px; font-weight: bold;">v<span id="ace-server-version">-</span><span class="version-dot">.</span><span id="ace-server-build">-</span></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 style="margin: 0 0 15px 0; color: #fff; font-size: 18px;">World Database</h3>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #00bcd4; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 12px; margin-bottom: 8px;">Base Version</div>
+                                        <div style="color: #00bcd4; font-size: 16px; font-weight: bold;" id="ace-database-base">-</div>
+                                    </div>
+                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #8bc34a; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 12px; margin-bottom: 8px;">Patch Version</div>
+                                        <div style="color: #8bc34a; font-size: 16px; font-weight: bold;" id="ace-database-patch">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- Console Tab -->
                     <section id="console-tab" class="tab-content active">
                         <div id="output" class="output">
@@ -138,54 +186,6 @@
                                     </div>
                                 </section>
                             </aside>
-                        </div>
-                    </section>
-
-                    <!-- Server Info Tab -->
-                    <section id="server-info-tab" class="tab-content">
-                        <div style="padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 25px;">
-                            <div>
-                                <h2 style="margin: 0 0 20px 0; color: #fff; font-size: 24px;">Server Status</h2>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #ff9800; border-radius: 4px;">
-                                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Server Name</div>
-                                        <div style="color: #fff; font-size: 18px; font-weight: bold;" id="server-name">Loading...</div>
-                                    </div>
-                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #4caf50; border-radius: 4px;">
-                                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Status</div>
-                                        <div style="color: #4caf50; font-size: 18px; font-weight: bold;" id="server-status">Offline</div>
-                                    </div>
-                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #2196f3; border-radius: 4px;">
-                                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Player Count</div>
-                                        <div style="color: #2196f3; font-size: 18px; font-weight: bold;" id="player-count">0</div>
-                                    </div>
-                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #9c27b0; border-radius: 4px;">
-                                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Uptime</div>
-                                        <div style="color: #9c27b0; font-size: 18px; font-weight: bold;" id="uptime">0s</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 style="margin: 0 0 15px 0; color: #fff; font-size: 18px;">ACE Server Version</h3>
-                                <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #ff9800; border-radius: 4px; color: #aaa;">
-                                    <div style="font-size: 16px; font-weight: bold;">v<span id="ace-server-version">-</span><span class="version-dot">.</span><span id="ace-server-build">-</span></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 style="margin: 0 0 15px 0; color: #fff; font-size: 18px;">World Database</h3>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #00bcd4; border-radius: 4px;">
-                                        <div style="color: #888; font-size: 12px; margin-bottom: 8px;">Base Version</div>
-                                        <div style="color: #00bcd4; font-size: 16px; font-weight: bold;" id="ace-database-base">-</div>
-                                    </div>
-                                    <div style="padding: 15px; background-color: #1a1a1a; border-left: 3px solid #8bc34a; border-radius: 4px;">
-                                        <div style="color: #888; font-size: 12px; margin-bottom: 8px;">Patch Version</div>
-                                        <div style="color: #8bc34a; font-size: 16px; font-weight: bold;" id="ace-database-patch">-</div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </section>
 
