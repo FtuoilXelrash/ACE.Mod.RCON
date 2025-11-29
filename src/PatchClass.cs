@@ -7,74 +7,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     private static RconServer? rconServer;
     private static RconHttpServer? httpServer;
 
+
+
     /// <summary>
     /// Override to ensure Settings.json is updated with any missing fields
     /// This handles upgrades from older versions of the mod
     /// </summary>
-    public override async void Init()
-    {
-        base.Init();
-
-        // After loading/creating settings, ensure all properties have values and save
-        // This ensures old Settings.json files get updated with any new default settings
-        if (SettingsContainer?.Settings != null)
-        {
-            var settings = SettingsContainer.Settings;
-
-            // Ensure all properties have their default values if not set
-            // This handles missing fields in older Settings.json files
-            if (settings.RconEnabled == false && string.IsNullOrEmpty(settings.RconPassword))
-                // Only reset if it looks like a completely empty settings object
-            {
-                // Use default Settings instance to fill in defaults
-                var defaultSettings = new Settings();
-                settings.RconEnabled = defaultSettings.RconEnabled;
-                settings.RconPort = defaultSettings.RconPort;
-                settings.WebRconEnabled = defaultSettings.WebRconEnabled;
-                settings.WebRconPort = defaultSettings.WebRconPort;
-                settings.RconPassword = defaultSettings.RconPassword;
-                settings.UseAceAuthentication = defaultSettings.UseAceAuthentication;
-                settings.MaxConnections = defaultSettings.MaxConnections;
-                settings.ConnectionTimeoutSeconds = defaultSettings.ConnectionTimeoutSeconds;
-                settings.EnableLogging = defaultSettings.EnableLogging;
-                settings.DebugMode = defaultSettings.DebugMode;
-                settings.AutoRefreshPlayers = defaultSettings.AutoRefreshPlayers;
-                settings.MaxReconnectAttempts = defaultSettings.MaxReconnectAttempts;
-                settings.ReconnectDelayMs = defaultSettings.ReconnectDelayMs;
-            }
-            else
-            {
-                // For existing files, fill in any missing fields with defaults
-                var defaultSettings = new Settings();
-
-                // This is a simple approach: check if WebRconPort is 0 (uninitialized)
-                // and set it to default
-                if (settings.WebRconPort == 0)
-                    settings.WebRconPort = defaultSettings.WebRconPort;
-                if (settings.MaxReconnectAttempts == 0)
-                    settings.MaxReconnectAttempts = defaultSettings.MaxReconnectAttempts;
-                if (settings.ReconnectDelayMs == 0)
-                    settings.ReconnectDelayMs = defaultSettings.ReconnectDelayMs;
-            }
-
-            // Give the file a moment to settle after initial creation
-            await Task.Delay(100);
-
-            // Use reflection to call the protected SaveSettingsAsync method
-            // This will serialize all properties with their current values, filling in any missing fields
-            var saveMethod = SettingsContainer.GetType().GetMethod("SaveSettingsAsync",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (saveMethod != null)
-            {
-#pragma warning disable CS8600, CS8602
-                var saved = await (Task<bool>)saveMethod.Invoke(SettingsContainer, new object[] { SettingsContainer.Settings })!;
-#pragma warning restore CS8600, CS8602
-                if (saved)
-                    ModManager.Log($"[RCON] Settings.json updated with any missing fields", ModManager.LogLevel.Info);
-            }
-        }
-    }
 
     /// <summary>
     /// Static reference to the instance so static command handlers can access SettingsContainer
@@ -83,13 +21,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     public override Task OnStartSuccess()
     {
+        // Always use defaults - don't depend on SettingsContainer
+        Settings = new Settings();
+
+        // Store instance reference for static command handler
+        Instance = this;
+
         try
         {
-            Settings = SettingsContainer?.Settings ?? new Settings();
-
-            // Store instance reference for static command handler
-            Instance = this;
-
             // Initialize authenticator with settings
             RconAuthenticator.Initialize(Settings);
 
@@ -145,10 +84,13 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
             // Initialize the log broadcaster with whichever servers are running
             RconLogBroadcaster.Instance.Initialize(rconServer, httpServer, Settings);
+
+            ModManager.Log($"[RCON] RCON started successfully!");
         }
         catch (Exception ex)
         {
-            ModManager.Log($"[RCON] ERROR during startup - {ex.Message}", ModManager.LogLevel.Error);
+            ModManager.Log($"[RCON] CRITICAL ERROR in OnStartSuccess(): {ex.GetType().Name}: {ex.Message}", ModManager.LogLevel.Error);
+            ModManager.Log($"[RCON] Stack trace: {ex.StackTrace}", ModManager.LogLevel.Error);
         }
 
         return Task.CompletedTask;
@@ -399,83 +341,17 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 /// </summary>
 public class Settings
 {
-    /// <summary>
-    /// Enable/disable RCON functionality (TCP and WebSocket)
-    /// </summary>
     public bool RconEnabled { get; set; } = false;
-
-    /// <summary>
-    /// Enable/disable Web RCON (WebSocket only)
-    /// When disabled, only TCP RCON is available
-    /// Default: true
-    /// </summary>
     public bool WebRconEnabled { get; set; } = true;
-
-    /// <summary>
-    /// Port to listen for RCON connections (TCP)
-    /// Default: 9004
-    /// </summary>
     public int RconPort { get; set; } = 9004;
-
-    /// <summary>
-    /// Port to listen for Web RCON connections (WebSocket HTTP)
-    /// Default: 9005
-    /// </summary>
     public int WebRconPort { get; set; } = 9005;
-
-    /// <summary>
-    /// RCON password (used if no ACE admin account available)
-    /// Change this to something secure!
-    /// </summary>
     public string RconPassword { get; set; } = "your_secure_password";
-
-    /// <summary>
-    /// Maximum concurrent RCON connections allowed
-    /// Default: 3
-    /// </summary>
     public int MaxConnections { get; set; } = 3;
-
-    /// <summary>
-    /// Connection timeout in seconds
-    /// Idle connections will be closed after this duration
-    /// Default: 300 (5 minutes)
-    /// </summary>
     public int ConnectionTimeoutSeconds { get; set; } = 300;
-
-    /// <summary>
-    /// Enable verbose logging of RCON operations
-    /// </summary>
     public bool EnableLogging { get; set; } = true;
-
-    /// <summary>
-    /// Enable debug mode - shows full JSON responses in web client
-    /// Set to true to see Data objects and detailed response info
-    /// </summary>
     public bool DebugMode { get; set; } = false;
-
-    /// <summary>
-    /// Auto-refresh players list when players login/logoff
-    /// When enabled, player list will update automatically instead of requiring manual refresh
-    /// </summary>
     public bool AutoRefreshPlayers { get; set; } = true;
-
-    /// <summary>
-    /// Maximum number of reconnection attempts for web client
-    /// Default: 42 (allows for ~10.5 minutes of reconnect attempts at 15 sec intervals)
-    /// </summary>
     public int MaxReconnectAttempts { get; set; } = 42;
-
-    /// <summary>
-    /// Delay in milliseconds between reconnection attempts
-    /// Default: 15000 (15 seconds)
-    /// </summary>
     public int ReconnectDelayMs { get; set; } = 15000;
-
-    /// <summary>
-    /// Use ACE-style packet-based authentication instead of Rust-style URL-based authentication
-    /// Default: true (ACE-style auth: password sent in first packet {"Command": "auth", "Password": "xxx"})
-    /// Set to false for Rust-style URL auth: ws://server:port/password
-    /// When true, web client will show login landing page
-    /// </summary>
     public bool UseAceAuthentication { get; set; } = true;
 }

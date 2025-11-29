@@ -1,0 +1,15 @@
+{
+  "RconEnabled": false,
+  "WebRconEnabled": true,
+  "RconPort": 9004,
+  "WebRconPort": 9005,
+  "RconPassword": "your_secure_password",
+  "MaxConnections": 3,
+  "ConnectionTimeoutSeconds": 300,
+  "EnableLogging": true,
+  "DebugMode": false,
+  "AutoRefreshPlayers": true,
+  "MaxReconnectAttempts": 42,
+  "ReconnectDelayMs": 15000,
+  "UseAceAuthentication": true
+}
