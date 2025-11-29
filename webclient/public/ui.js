@@ -14,12 +14,20 @@ let historyManagerReady = false; // Track when history manager is ready
 
 // Console filters - track which message types are filtered
 let consoleFilters = {
-    landblockmanager: false, // LandblockManager messages - default unchecked (show all)
-    modmanager: false,       // ModManager messages - default unchecked (show all)
-    eventmanager: false,     // EventManager messages - default unchecked (show all)
-    guidmanager: false,      // GuidManager messages - default unchecked (show all)
-    datmanager: false,       // DatManager messages - default unchecked (show all)
-    housemanager: false      // HouseManager messages - default unchecked (show all)
+    aceprogram: false,                // ACE Program messages - default unchecked (show all)
+    database: false,                  // Database messages - default unchecked (show all)
+    datmanager: false,                // DatManager messages - default unchecked (show all)
+    entity: false,                    // Entity messages - default unchecked (show all)
+    eventmanager: false,              // EventManager messages - default unchecked (show all)
+    guidmanager: false,               // GuidManager messages - default unchecked (show all)
+    landblockmanager: false,          // LandblockManager messages - default unchecked (show all)
+    managers: false,                  // Managers messages - default unchecked (show all)
+    modmanager: false,                // ModManager messages - default unchecked (show all)
+    network: false,                   // Network messages - default unchecked (show all)
+    playermanager: false,             // PlayerManager messages - default unchecked (show all)
+    propertymanager: false,           // PropertyManager messages - default unchecked (show all)
+    timestamp: true,                  // Timestamp - default CHECKED (enabled)
+    acemodule: false                  // ACE Module - default UNCHECKED (strip module names)
 };
 
 /**
@@ -868,6 +876,58 @@ async function stopNow() {
 }
 
 /**
+ * Send world open command
+ */
+async function openWorld() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        const openBtn = document.getElementById('open-world-btn');
+        if (openBtn) openBtn.disabled = true;
+
+        addOutput('> world open', 'command-message');
+
+        const response = await client.send('world', ['open']);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Command error: ${error.message}`, 'error-message');
+    } finally {
+        const openBtn = document.getElementById('open-world-btn');
+        if (openBtn) openBtn.disabled = false;
+    }
+}
+
+/**
+ * Send world close command
+ */
+async function closeWorld() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        const closeBtn = document.getElementById('close-world-btn');
+        if (closeBtn) closeBtn.disabled = true;
+
+        addOutput('> world close', 'command-message');
+
+        const response = await client.send('world', ['close']);
+
+        // Response is handled by onResponse
+    } catch (error) {
+        addOutput(`Command error: ${error.message}`, 'error-message');
+    } finally {
+        const closeBtn = document.getElementById('close-world-btn');
+        if (closeBtn) closeBtn.disabled = false;
+    }
+}
+
+/**
  * Toggle console filter on/off
  */
 function toggleConsoleFilter(filterName, isChecked) {
@@ -891,29 +951,61 @@ function loadConsoleFilters() {
             console.log('[UI] Loaded console filters:', consoleFilters);
 
             // Update checkbox UI
-            const landblockCheckbox = document.getElementById('filter-landblock-manager');
-            if (landblockCheckbox) {
-                landblockCheckbox.checked = consoleFilters.landblockmanager;
+            const aceProgramCheckbox = document.getElementById('filter-ace-program');
+            if (aceProgramCheckbox) {
+                aceProgramCheckbox.checked = consoleFilters.aceprogram;
             }
-            const modCheckbox = document.getElementById('filter-mod-manager');
-            if (modCheckbox) {
-                modCheckbox.checked = consoleFilters.modmanager;
-            }
-            const eventCheckbox = document.getElementById('filter-event-manager');
-            if (eventCheckbox) {
-                eventCheckbox.checked = consoleFilters.eventmanager;
-            }
-            const guidCheckbox = document.getElementById('filter-guid-manager');
-            if (guidCheckbox) {
-                guidCheckbox.checked = consoleFilters.guidmanager;
+            const databaseCheckbox = document.getElementById('filter-database');
+            if (databaseCheckbox) {
+                databaseCheckbox.checked = consoleFilters.database;
             }
             const datCheckbox = document.getElementById('filter-dat-manager');
             if (datCheckbox) {
                 datCheckbox.checked = consoleFilters.datmanager;
             }
-            const houseCheckbox = document.getElementById('filter-house-manager');
-            if (houseCheckbox) {
-                houseCheckbox.checked = consoleFilters.housemanager;
+            const entityCheckbox = document.getElementById('filter-entity');
+            if (entityCheckbox) {
+                entityCheckbox.checked = consoleFilters.entity;
+            }
+            const eventManagerCheckbox = document.getElementById('filter-event-manager');
+            if (eventManagerCheckbox) {
+                eventManagerCheckbox.checked = consoleFilters.eventmanager;
+            }
+            const guidManagerCheckbox = document.getElementById('filter-guid-manager');
+            if (guidManagerCheckbox) {
+                guidManagerCheckbox.checked = consoleFilters.guidmanager;
+            }
+            const landblockManagerCheckbox = document.getElementById('filter-landblock-manager');
+            if (landblockManagerCheckbox) {
+                landblockManagerCheckbox.checked = consoleFilters.landblockmanager;
+            }
+            const managersCheckbox = document.getElementById('filter-managers');
+            if (managersCheckbox) {
+                managersCheckbox.checked = consoleFilters.managers;
+            }
+            const playerManagerCheckbox = document.getElementById('filter-player-manager');
+            if (playerManagerCheckbox) {
+                playerManagerCheckbox.checked = consoleFilters.playermanager;
+            }
+            const propertyManagerCheckbox = document.getElementById('filter-property-manager');
+            if (propertyManagerCheckbox) {
+                propertyManagerCheckbox.checked = consoleFilters.propertymanager;
+            }
+            const modCheckbox = document.getElementById('filter-mod-manager');
+            if (modCheckbox) {
+                modCheckbox.checked = consoleFilters.modmanager;
+            }
+            const networkCheckbox = document.getElementById('filter-network');
+            if (networkCheckbox) {
+                networkCheckbox.checked = consoleFilters.network;
+            }
+            const timestampCheckbox = document.getElementById('filter-timestamp');
+            if (timestampCheckbox) {
+                timestampCheckbox.checked = consoleFilters.timestamp;
+            }
+            const aceModuleCheckbox = document.getElementById('filter-ace-module');
+            if (aceModuleCheckbox) {
+                aceModuleCheckbox.checked = consoleFilters.acemodule;
             }
         } catch (e) {
             console.error('[UI] Failed to load console filters:', e);
@@ -960,7 +1052,16 @@ function addOutput(message, className = '') {
     if (consoleFilters.landblockmanager && message.includes('[ACE.Server.Managers.LandblockManager]')) {
         return; // Skip this message - filter is active
     }
-    if (consoleFilters.modmanager && message.includes('[ACE.Server.Mods.ModManager]')) {
+    if (consoleFilters.managers && message.includes('[ACE.Server.Managers.')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.modmanager && message.includes('[ACE.Server.Mods.')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.datmanager && message.includes('[ACE.DatLoader.DatManager]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.entity && message.includes('[ACE.Server.Entity')) {
         return; // Skip this message - filter is active
     }
     if (consoleFilters.eventmanager && message.includes('[ACE.Server.Managers.EventManager]')) {
@@ -969,10 +1070,22 @@ function addOutput(message, className = '') {
     if (consoleFilters.guidmanager && message.includes('[ACE.Server.Managers.GuidManager]')) {
         return; // Skip this message - filter is active
     }
-    if (consoleFilters.datmanager && message.includes('[ACE.DatLoader.DatManager]')) {
+    if (consoleFilters.landblockmanager && message.includes('[ACE.Server.Managers.LandblockManager]')) {
         return; // Skip this message - filter is active
     }
-    if (consoleFilters.housemanager && message.includes('[ACE.Server.Managers.HouseManager]')) {
+    if (consoleFilters.playermanager && message.includes('[ACE.Server.Managers.PlayerManager]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.propertymanager && message.includes('[ACE.Server.Managers.PropertyManager]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.aceprogram && message.includes('[ACE.Server.Program]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.database && message.includes('[ACE.Database.')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.network && message.includes('[ACE.Server.Network')) {
         return; // Skip this message - filter is active
     }
 
@@ -981,13 +1094,32 @@ function addOutput(message, className = '') {
         line.className = className;
     }
 
+    // Strip ACE module name if disabled
+    let displayMessage = message;
+    if (!consoleFilters.acemodule) {
+        // Remove [ACE.xxx.yyy] pattern from the beginning of the message
+        displayMessage = displayMessage.replace(/^\[ACE\.[^\]]+\]\s*/, '');
+    }
+
+    // Add timestamp if enabled
+    if (consoleFilters.timestamp) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        displayMessage = `[${timeString}] ${displayMessage}`;
+    }
+
     // Handle multi-line messages (like formatted JSON)
-    if (message.includes('\n')) {
+    if (displayMessage.includes('\n')) {
         const pre = document.createElement('pre');
-        pre.textContent = message;
+        pre.textContent = displayMessage;
         line.appendChild(pre);
     } else {
-        line.textContent = message;
+        line.textContent = displayMessage;
     }
 
     output.appendChild(line);
@@ -1033,6 +1165,8 @@ function enableCommands() {
     const statusBtn = document.getElementById('status-btn');
     const helloBtn = document.getElementById('hello-btn');
     const stopNowBtn = document.getElementById('stop-now-btn');
+    const openWorldBtn = document.getElementById('open-world-btn');
+    const closeWorldBtn = document.getElementById('close-world-btn');
 
     if (commandInput) commandInput.disabled = false;
     if (sendBtn) sendBtn.disabled = false;
@@ -1047,6 +1181,8 @@ function enableCommands() {
     if (statusBtn) statusBtn.disabled = false;
     if (helloBtn) helloBtn.disabled = false;
     if (stopNowBtn) stopNowBtn.disabled = false;
+    if (openWorldBtn) openWorldBtn.disabled = false;
+    if (closeWorldBtn) closeWorldBtn.disabled = false;
 
     quickButtons.forEach(btn => {
         btn.disabled = false;
@@ -1071,6 +1207,8 @@ function disableCommands() {
     const statusBtn = document.getElementById('status-btn');
     const helloBtn = document.getElementById('hello-btn');
     const stopNowBtn = document.getElementById('stop-now-btn');
+    const openWorldBtn = document.getElementById('open-world-btn');
+    const closeWorldBtn = document.getElementById('close-world-btn');
 
     if (commandInput) commandInput.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
@@ -1085,6 +1223,8 @@ function disableCommands() {
     if (statusBtn) statusBtn.disabled = true;
     if (helloBtn) helloBtn.disabled = true;
     if (stopNowBtn) stopNowBtn.disabled = true;
+    if (openWorldBtn) openWorldBtn.disabled = true;
+    if (closeWorldBtn) closeWorldBtn.disabled = true;
 
     quickButtons.forEach(btn => {
         btn.disabled = true;

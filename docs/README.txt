@@ -199,6 +199,13 @@ Console Tab
 - Customizable colors via color picker (saves to browser local storage)
 - Command and message history with dropdown selectors
 - History saved to browser localStorage for persistence
+- Console Filters (filter out noisy module messages):
+  ACE Program, Database, DatManager, Entity, EventManager, GuidManager,
+  LandblockManager, Managers, ModManager, Network, PlayerManager, PropertyManager
+- Display Options:
+  Timestamp - Prefix messages with [HH:mm:ss] timestamp (enabled by default)
+  Show ACE Module - Show/hide [ACE.Server.xxx] module name prefix (disabled by
+                    default)
 
 Players Tab
 -----------

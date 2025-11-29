@@ -300,18 +300,28 @@
                         <button id="ace-commands-btn" onclick="aceCommands()" disabled>ACE Commands</button>
                         <button id="list-players-btn" onclick="listPlayers()" disabled>List Players</button>
                         <button id="population-btn" onclick="population()" disabled>Population</button>
+                        <button id="open-world-btn" onclick="openWorld()" disabled>Open World</button>
+                        <button id="close-world-btn" onclick="closeWorld()" disabled>Close World</button>
                         <button id="stop-now-btn" onclick="stopNow()" disabled style="background-color: #d32f2f; margin-top: 10px;">Stop Server Now</button>
                     </section>
 
                     <section class="console-filters-section">
                         <h3>Console Filters</h3>
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
-                            <input type="checkbox" id="filter-landblock-manager" onchange="toggleConsoleFilter('landblockmanager', this.checked)">
-                            <span>LandblockManager</span>
+                            <input type="checkbox" id="filter-ace-program" onchange="toggleConsoleFilter('aceprogram', this.checked)">
+                            <span>ACE Program</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
-                            <input type="checkbox" id="filter-mod-manager" onchange="toggleConsoleFilter('modmanager', this.checked)">
-                            <span>ModManager</span>
+                            <input type="checkbox" id="filter-database" onchange="toggleConsoleFilter('database', this.checked)">
+                            <span>Database</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="filter-dat-manager" onchange="toggleConsoleFilter('datmanager', this.checked)">
+                            <span>DatManager</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="filter-entity" onchange="toggleConsoleFilter('entity', this.checked)">
+                            <span>Entity</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
                             <input type="checkbox" id="filter-event-manager" onchange="toggleConsoleFilter('eventmanager', this.checked)">
@@ -322,12 +332,37 @@
                             <span>GuidManager</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
-                            <input type="checkbox" id="filter-dat-manager" onchange="toggleConsoleFilter('datmanager', this.checked)">
-                            <span>DatManager</span>
+                            <input type="checkbox" id="filter-landblock-manager" onchange="toggleConsoleFilter('landblockmanager', this.checked)">
+                            <span>LandblockManager</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
-                            <input type="checkbox" id="filter-house-manager" onchange="toggleConsoleFilter('housemanager', this.checked)">
-                            <span>HouseManager</span>
+                            <input type="checkbox" id="filter-managers" onchange="toggleConsoleFilter('managers', this.checked)">
+                            <span>Managers</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="filter-mod-manager" onchange="toggleConsoleFilter('modmanager', this.checked)">
+                            <span>ModManager</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="filter-network" onchange="toggleConsoleFilter('network', this.checked)">
+                            <span>Network</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="filter-player-manager" onchange="toggleConsoleFilter('playermanager', this.checked)">
+                            <span>PlayerManager</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="filter-property-manager" onchange="toggleConsoleFilter('propertymanager', this.checked)">
+                            <span>PropertyManager</span>
+                        </label>
+                        <hr style="margin: 8px 0; border: none; border-top: 1px solid #444;">
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="filter-timestamp" onchange="toggleConsoleFilter('timestamp', this.checked)" checked>
+                            <span>Timestamp</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; font-size: 12px;">
+                            <input type="checkbox" id="filter-ace-module" onchange="toggleConsoleFilter('acemodule', this.checked)">
+                            <span>Show ACE Module</span>
                         </label>
                     </section>
                 </aside>

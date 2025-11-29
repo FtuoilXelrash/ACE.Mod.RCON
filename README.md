@@ -137,6 +137,22 @@ The RCON implementation uses Rust RCON protocol format but with ACE CommandManag
     - ERROR - Red (#f44336)
 - Auto-scroll to new messages
 - Customizable colors via color picker (saves to browser local storage)
+- **Console Filters** - Filter out noisy module messages:
+  - ACE Program - filters `[ACE.Server.Program]` messages
+  - Database - filters `[ACE.Database.*]` messages
+  - DatManager - filters `[ACE.DatLoader.DatManager]` messages
+  - Entity - filters `[ACE.Server.Entity.*]` messages
+  - EventManager - filters `[ACE.Server.Managers.EventManager]` messages
+  - GuidManager - filters `[ACE.Server.Managers.GuidManager]` messages
+  - LandblockManager - filters `[ACE.Server.Managers.LandblockManager]` messages
+  - Managers - filters all `[ACE.Server.Managers.*]` messages
+  - ModManager - filters all `[ACE.Server.Mods.*]` messages
+  - Network - filters all `[ACE.Server.Network.*]` messages
+  - PlayerManager - filters `[ACE.Server.Managers.PlayerManager]` messages
+  - PropertyManager - filters `[ACE.Server.Managers.PropertyManager]` messages
+- **Display Options**:
+  - **Timestamp** - Prefix each console message with `[HH:mm:ss]` timestamp (enabled by default)
+  - **Show ACE Module** - Show/hide the ACE module name `[ACE.Server.xxx]` prefix on messages (disabled by default to reduce clutter)
 
 ### Players Tab
 - Online player list with details (name, level, race, location)
