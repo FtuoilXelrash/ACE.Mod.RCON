@@ -12,6 +12,16 @@ let useAceAuthentication = false; // Will be set from server config (auto-detect
 let historyManagerReady = false; // Track when history manager is ready
 // historyManager is created globally by history-manager.js - don't declare it here!
 
+// Console filters - track which message types are filtered
+let consoleFilters = {
+    landblockmanager: false, // LandblockManager messages - default unchecked (show all)
+    modmanager: false,       // ModManager messages - default unchecked (show all)
+    eventmanager: false,     // EventManager messages - default unchecked (show all)
+    guidmanager: false,      // GuidManager messages - default unchecked (show all)
+    datmanager: false,       // DatManager messages - default unchecked (show all)
+    housemanager: false      // HouseManager messages - default unchecked (show all)
+};
+
 /**
  * Initialize the UI and WebSocket client
  */
@@ -69,6 +79,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialize history manager for command and message history (fire and forget - don't block UI)
     initializeHistory().catch(err => console.error('[UI] History init error (continuing):', err));
+
+    // Load console filters from localStorage
+    loadConsoleFilters();
 
     // Restore auto-refresh checkbox state from localStorage
     const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
@@ -855,6 +868,60 @@ async function stopNow() {
 }
 
 /**
+ * Toggle console filter on/off
+ */
+function toggleConsoleFilter(filterName, isChecked) {
+    console.log('[UI] Toggling filter:', filterName, 'isChecked:', isChecked);
+    consoleFilters[filterName] = isChecked;
+
+    // Save filter state to localStorage
+    localStorage.setItem('consoleFilters', JSON.stringify(consoleFilters));
+    console.log('[UI] Filter state saved:', consoleFilters);
+}
+
+/**
+ * Load console filters from localStorage
+ */
+function loadConsoleFilters() {
+    const saved = localStorage.getItem('consoleFilters');
+    if (saved) {
+        try {
+            const filters = JSON.parse(saved);
+            consoleFilters = { ...consoleFilters, ...filters };
+            console.log('[UI] Loaded console filters:', consoleFilters);
+
+            // Update checkbox UI
+            const landblockCheckbox = document.getElementById('filter-landblock-manager');
+            if (landblockCheckbox) {
+                landblockCheckbox.checked = consoleFilters.landblockmanager;
+            }
+            const modCheckbox = document.getElementById('filter-mod-manager');
+            if (modCheckbox) {
+                modCheckbox.checked = consoleFilters.modmanager;
+            }
+            const eventCheckbox = document.getElementById('filter-event-manager');
+            if (eventCheckbox) {
+                eventCheckbox.checked = consoleFilters.eventmanager;
+            }
+            const guidCheckbox = document.getElementById('filter-guid-manager');
+            if (guidCheckbox) {
+                guidCheckbox.checked = consoleFilters.guidmanager;
+            }
+            const datCheckbox = document.getElementById('filter-dat-manager');
+            if (datCheckbox) {
+                datCheckbox.checked = consoleFilters.datmanager;
+            }
+            const houseCheckbox = document.getElementById('filter-house-manager');
+            if (houseCheckbox) {
+                houseCheckbox.checked = consoleFilters.housemanager;
+            }
+        } catch (e) {
+            console.error('[UI] Failed to load console filters:', e);
+        }
+    }
+}
+
+/**
  * Navigate command history
  */
 function navigateHistory(direction) {
@@ -888,6 +955,26 @@ function navigateHistory(direction) {
 function addOutput(message, className = '') {
     const output = document.getElementById('output');
     if (!output) return;
+
+    // Check if this message should be filtered
+    if (consoleFilters.landblockmanager && message.includes('[ACE.Server.Managers.LandblockManager]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.modmanager && message.includes('[ACE.Server.Mods.ModManager]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.eventmanager && message.includes('[ACE.Server.Managers.EventManager]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.guidmanager && message.includes('[ACE.Server.Managers.GuidManager]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.datmanager && message.includes('[ACE.DatLoader.DatManager]')) {
+        return; // Skip this message - filter is active
+    }
+    if (consoleFilters.housemanager && message.includes('[ACE.Server.Managers.HouseManager]')) {
+        return; // Skip this message - filter is active
+    }
 
     const line = document.createElement('div');
     if (className) {
