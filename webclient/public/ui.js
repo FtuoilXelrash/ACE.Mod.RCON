@@ -2021,14 +2021,19 @@ function displayBans(bannedAccounts) {
         return;
     }
 
+    console.log('[UI] displayBans called with', bannedAccounts.length, 'accounts');
+    console.log('[UI] First account:', bannedAccounts[0]);
+
     let html = '';
     bannedAccounts.forEach((ban, index) => {
         const accountName = ban.AccountName || 'Unknown';
         const expireTime = ban.BanExpireTime || 'Unknown';
         const reason = ban.BanReason || 'No reason specified';
 
+        console.log(`[UI] Ban ${index}: AccountName="${accountName}"`);
+
         html += `
-            <div class="ban-item" onclick="selectBannedAccount(this, '${accountName}')">
+            <div class="ban-item" data-account-name="${accountName}" onclick="selectBannedAccount(this)">
                 <div class="ban-info">
                     <span class="ban-account-name">${accountName}</span>
                     <span class="ban-details" style="font-size: 11px; color: #aaa;">Expires: ${expireTime}</span>
@@ -2044,7 +2049,10 @@ function displayBans(bannedAccounts) {
 /**
  * Select a banned account and show details in sidebar
  */
-async function selectBannedAccount(element, accountName) {
+async function selectBannedAccount(element) {
+    console.log('[UI] selectBannedAccount called with element:', element);
+    console.log('[UI] element.getAttribute(data-account-name):', element.getAttribute('data-account-name'));
+
     // Deselect all other bans
     document.querySelectorAll('.ban-item.selected').forEach(item => {
         item.classList.remove('selected');
@@ -2052,7 +2060,15 @@ async function selectBannedAccount(element, accountName) {
 
     // Select current ban
     element.classList.add('selected');
-    element.dataset.accountName = accountName;
+
+    // Get account name from data attribute
+    const accountName = element.getAttribute('data-account-name');
+    console.log('[UI] selectBannedAccount: accountName=', accountName);
+
+    if (!accountName) {
+        console.error('[UI] No account name found in element');
+        return;
+    }
 
     try {
         // Fetch detailed ban info
@@ -2079,7 +2095,6 @@ function displayBanDetails(banInfo, accountName) {
     const charactersSection = document.getElementById('ban-characters-section');
     const charactersList = document.getElementById('ban-characters-list');
     const unbanBtn = document.getElementById('unban-btn');
-    const editReasonBtn = document.getElementById('edit-reason-btn');
 
     // Build details HTML
     let detailsHtml = `
@@ -2089,17 +2104,12 @@ function displayBanDetails(banInfo, accountName) {
         <div style="margin-bottom: 10px;">
             <strong style="color: #fff;">Expires:</strong> ${banInfo.BanExpireTime || 'Unknown'}
         </div>
-        <div style="margin-bottom: 10px;">
-            <strong style="color: #fff;">Reason:</strong><br>
-            <span style="color: #ffb74d;">${banInfo.BanReason || 'No reason specified'}</span>
-        </div>
     `;
 
     detailsDiv.innerHTML = detailsHtml;
 
     // Enable buttons
     if (unbanBtn) unbanBtn.disabled = false;
-    if (editReasonBtn) editReasonBtn.disabled = false;
 
     // Display characters if available
     if (banInfo.Characters && banInfo.Characters.length > 0) {
@@ -2124,11 +2134,19 @@ function displayBanDetails(banInfo, accountName) {
  */
 async function unbanSelectedAccount() {
     const selected = document.querySelector('.ban-item.selected');
-    if (!selected) return;
+    console.log('[UI] unbanSelectedAccount: selected element=', selected);
 
-    const accountName = selected.dataset.accountName;
+    if (!selected) {
+        console.log('[UI] unbanSelectedAccount: no selected element found');
+        return;
+    }
+
+    const accountName = selected.getAttribute('data-account-name');
+    console.log('[UI] unbanSelectedAccount: accountName from getAttribute=', accountName);
+
     if (!accountName) {
         addOutput('Error: Account name not available', 'error-output');
+        console.error('[UI] unbanSelectedAccount: accountName is empty or null');
         return;
     }
 
@@ -2158,58 +2176,14 @@ async function unbanSelectedAccount() {
 }
 
 /**
- * Edit ban reason for selected account
- */
-async function editBanReason() {
-    const selected = document.querySelector('.ban-item.selected');
-    if (!selected) return;
-
-    const accountName = selected.dataset.accountName;
-    if (!accountName) {
-        addOutput('Error: Account name not available', 'error-output');
-        return;
-    }
-
-    const newReason = prompt(`Enter new ban reason for ${accountName}:`);
-
-    if (newReason === null) {
-        return; // User cancelled
-    }
-
-    if (newReason.trim() === '') {
-        addOutput('Error: Reason cannot be empty', 'error-output');
-        return;
-    }
-
-    try {
-        addOutput(`Updating ban reason for: ${accountName}...`, 'info-output');
-
-        const response = await client.send('banreason', [accountName, newReason]);
-
-        if (response.Status === 'success') {
-            addOutput(`Ban reason updated for: ${accountName}`, 'success-output');
-            // Refresh details
-            await selectBannedAccount(selected, accountName);
-        } else {
-            addOutput(`Error updating reason: ${response.Message || 'Unknown error'}`, 'error-output');
-        }
-    } catch (error) {
-        addOutput(`Error updating reason: ${error.message}`, 'error-output');
-        console.error('[UI] Error in editBanReason:', error);
-    }
-}
-
-/**
  * Update ban actions sidebar state
  */
 function updateBanActionsSidebar() {
     const selected = document.querySelector('.ban-item.selected');
     const unbanBtn = document.getElementById('unban-btn');
-    const editReasonBtn = document.getElementById('edit-reason-btn');
 
     if (!selected) {
         if (unbanBtn) unbanBtn.disabled = true;
-        if (editReasonBtn) editReasonBtn.disabled = true;
         const detailsDiv = document.getElementById('ban-details-info');
         if (detailsDiv) detailsDiv.innerHTML = '<p style="margin: 0; text-align: center;">No banned account selected</p>';
     }

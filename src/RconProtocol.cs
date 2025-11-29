@@ -104,6 +104,12 @@ public static class RconProtocol
             return SetDebugFlag(HandleBanreason(request, settings), settings);
         }
 
+        // Handle UNBAN command - unbans an account (allowed after auth)
+        if (command == "unban" && connection.IsAuthenticated)
+        {
+            return SetDebugFlag(HandleUnban(request, settings), settings);
+        }
+
         // Handle authentication if using ACE auth mode
         if (useAceAuth && !connection.IsAuthenticated)
         {
@@ -747,45 +753,50 @@ public static class RconProtocol
 
             string accountName = request.Args[0];
 
-            // Call banlist and parse to find this account
-            var outputCapture = new System.IO.StringWriter();
-            var originalOut = System.Console.Out;
-
-            try
-            {
-                System.Console.SetOut(outputCapture);
-
-                // Parse and execute the banlist command
-                string command = "";
-                string[] parameters = System.Array.Empty<string>();
-                CommandManager.ParseCommand("banlist", out command, out parameters);
-                var handlerResponse = CommandManager.GetCommandHandler(null, command, parameters, out var commandInfo);
-
-                if (handlerResponse == CommandHandlerResponse.Ok)
-                {
-                    ((CommandHandler)commandInfo.Handler).Invoke(null, parameters);
-                }
-            }
-            finally
-            {
-                System.Console.SetOut(originalOut);
-            }
-
-            var output = outputCapture.ToString();
-            var bannedAccounts = ParseBanlistOutput(output);
-
-            // Find the specific account
-            var banInfo = bannedAccounts.FirstOrDefault(a => a["AccountName"].ToString()?.Equals(accountName, StringComparison.OrdinalIgnoreCase) ?? false);
-
-            if (banInfo == null)
+            // Query database directly for ban info
+            var authDb = DatabaseManager.Authentication;
+            if (authDb == null)
             {
                 return new RconResponse
                 {
                     Identifier = request.Identifier,
                     Status = "error",
-                    Message = $"Account '{accountName}' not found or not banned"
+                    Message = "Database not available"
                 };
             }
+
+            // Try to find the account by name
+            var account = authDb.GetAccountByName(accountName);
+            if (account == null)
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = $"Account '{accountName}' not found"
+                };
+            }
+
+            // Check if account has an active ban
+            var now = DateTime.UtcNow;
+            if (!account.BanExpireTime.HasValue || account.BanExpireTime <= now)
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = $"Account '{accountName}' is not banned"
+                };
+            }
+
+            // Build response with ban info
+            var banInfo = new Dictionary<string, object>
+            {
+                { "AccountName", account.AccountName ?? "Unknown" },
+                { "BanExpireTime", account.BanExpireTime.Value.ToString("MMM dd yyyy h:mmtt") },
+                { "BanReason", account.BanReason ?? "No reason specified" },
+                { "Characters", new List<Dictionary<string, object>>() } // Empty for now, could be populated from character DB
+            };
 
             var response = new RconResponse
             {
@@ -853,6 +864,88 @@ public static class RconProtocol
                 Identifier = request.Identifier,
                 Status = "error",
                 Message = $"Error: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Handle unban command - unbans an account
+    /// </summary>
+    private static RconResponse HandleUnban(RconRequest request, Settings? settings)
+    {
+        try
+        {
+            if (request.Args == null || request.Args.Count == 0)
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = "Account name required. Usage: unban <accountname>"
+                };
+            }
+
+            string accountName = request.Args[0];
+
+            // Query database to find the account
+            var authDb = DatabaseManager.Authentication;
+            if (authDb == null)
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = "Database not available"
+                };
+            }
+
+            var account = authDb.GetAccountByName(accountName);
+            if (account == null)
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = $"Account '{accountName}' not found"
+                };
+            }
+
+            // Check if account has an active ban
+            var now = DateTime.UtcNow;
+            if (!account.BanExpireTime.HasValue || account.BanExpireTime <= now)
+            {
+                return new RconResponse
+                {
+                    Identifier = request.Identifier,
+                    Status = "error",
+                    Message = $"Account '{accountName}' is not banned"
+                };
+            }
+
+            // Clear the ban by setting BanExpireTime to null
+            account.BanExpireTime = null;
+            account.BanReason = null;
+
+            // Save the changes to the database
+            authDb.UpdateAccount(account);
+
+            ModManager.Log($"[RCON] Account '{accountName}' has been unbanned", ModManager.LogLevel.Info);
+
+            return new RconResponse
+            {
+                Identifier = request.Identifier,
+                Status = "success",
+                Message = $"Account '{accountName}' has been unbanned"
+            };
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[RCON] ERROR in HandleUnban: {ex.Message}", ModManager.LogLevel.Error);
+            return new RconResponse
+            {
+                Identifier = request.Identifier,
+                Status = "error",
+                Message = $"Error unbanning account: {ex.Message}"
             };
         }
     }
