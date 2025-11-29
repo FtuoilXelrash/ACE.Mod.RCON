@@ -362,6 +362,97 @@ Display available ACE console commands. This is a passthrough to the ACE server'
 }
 ```
 
+### banlist
+
+Get list of all banned accounts with expiration times and ban reasons.
+
+**Request:**
+```json
+{
+  "Command": "banlist",
+  "Identifier": 5
+}
+```
+
+**Response:**
+```json
+{
+  "Identifier": 5,
+  "Status": "success",
+  "Message": "Banned accounts list",
+  "Data": {
+    "BannedAccounts": [
+      {
+        "AccountName": "testaccount",
+        "BanExpireTime": "2025-12-31 23:59:59",
+        "BanReason": "RMT activity detected"
+      }
+    ],
+    "Count": 1
+  },
+  "Debug": false
+}
+```
+
+### baninfo
+
+Get detailed information about a specific banned account, including characters.
+
+**Request:**
+```json
+{
+  "Command": "baninfo",
+  "Args": ["accountname"],
+  "Identifier": 6
+}
+```
+
+**Response:**
+```json
+{
+  "Identifier": 6,
+  "Status": "success",
+  "Message": "Ban details for account",
+  "Data": {
+    "AccountName": "testaccount",
+    "BanExpireTime": "2025-12-31 23:59:59",
+    "BanReason": "RMT activity detected",
+    "Characters": [
+      {
+        "CharacterName": "TestChar1",
+        "Level": 275,
+        "Race": "Gharu'ndim",
+        "Class": "Warrior"
+      }
+    ]
+  },
+  "Debug": false
+}
+```
+
+### banreason
+
+Update the ban reason for a specific banned account.
+
+**Request:**
+```json
+{
+  "Command": "banreason",
+  "Args": ["accountname", "new reason text"],
+  "Identifier": 7
+}
+```
+
+**Response:**
+```json
+{
+  "Identifier": 7,
+  "Status": "success",
+  "Message": "Ban reason updated (or attempted)",
+  "Debug": false
+}
+```
+
 ## ACE Console Command Passthrough
 
 All ACE server console commands are available through RCON command passthrough. Simply send the command name and any arguments as parameters. For a complete list of available ACE commands, see:

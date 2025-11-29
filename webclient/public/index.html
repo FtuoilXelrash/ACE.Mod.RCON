@@ -47,6 +47,7 @@
                 <button class="tab-button active" onclick="switchTab('console-tab')">Console</button>
                 <button class="tab-button" onclick="switchTab('server-info-tab')">Server Info</button>
                 <button class="tab-button" onclick="switchTab('players-tab')">Players</button>
+                <button class="tab-button" onclick="switchTab('bans-tab')">Bans</button>
                 <button class="tab-button" onclick="switchTab('config-tab')">Configuration</button>
             </div>
 
@@ -156,6 +157,37 @@
                                         </div>
                                         <button id="boot-player-btn" onclick="bootSelectedPlayer()" disabled style="width: 100%; padding: 10px; margin-bottom: 10px; background-color: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Boot Player</button>
                                         <button id="ban-player-btn" onclick="banSelectedPlayer()" disabled style="width: 100%; padding: 10px; background-color: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Ban Player</button>
+                                    </section>
+                                </aside>
+                            </div>
+                        </section>
+
+                        <!-- Bans Tab -->
+                        <section id="bans-tab" class="tab-content">
+                            <div style="display: flex; gap: 20px; overflow: hidden; flex: 1; min-height: 0;">
+                                <!-- Bans Content -->
+                                <div style="flex: 1 1 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+                                    <div class="bans-toolbar">
+                                        <button id="fetch-bans-btn" onclick="fetchBans()" disabled>Fetch Bans</button>
+                                    </div>
+                                    <div id="bans-list" class="bans-list">
+                                        <div class="info-message">Click Fetch Bans to load banned accounts list</div>
+                                    </div>
+                                </div>
+                                <!-- Bans Sidebar (ban details) -->
+                                <aside id="bans-sidebar" class="sidebar">
+                                    <section style="padding: 15px;">
+                                        <h3 style="margin-top: 0; color: #fff;">Ban Details</h3>
+                                        <div id="ban-details-info" style="padding: 10px; background-color: #222; border-radius: 4px; margin-bottom: 15px; color: #aaa; font-size: 12px;">
+                                            <p style="margin: 0; text-align: center;">No banned account selected</p>
+                                        </div>
+                                        <div id="ban-characters-section" style="margin-bottom: 15px; display: none;">
+                                            <h4 style="margin: 0 0 10px 0; color: #fff; font-size: 13px;">Characters:</h4>
+                                            <div id="ban-characters-list" style="background-color: #222; border-radius: 4px; padding: 10px; color: #aaa; font-size: 11px; max-height: 150px; overflow-y: auto;">
+                                            </div>
+                                        </div>
+                                        <button id="unban-btn" onclick="unbanSelectedAccount()" disabled style="width: 100%; padding: 10px; margin-bottom: 10px; background-color: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Unban Account</button>
+                                        <button id="edit-reason-btn" onclick="editBanReason()" disabled style="width: 100%; padding: 10px; background-color: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Edit Reason</button>
                                     </section>
                                 </aside>
                             </div>

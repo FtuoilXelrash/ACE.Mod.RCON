@@ -1167,6 +1167,7 @@ function enableCommands() {
     const stopNowBtn = document.getElementById('stop-now-btn');
     const openWorldBtn = document.getElementById('open-world-btn');
     const closeWorldBtn = document.getElementById('close-world-btn');
+    const fetchBansBtn = document.getElementById('fetch-bans-btn');
 
     if (commandInput) commandInput.disabled = false;
     if (sendBtn) sendBtn.disabled = false;
@@ -1183,6 +1184,7 @@ function enableCommands() {
     if (stopNowBtn) stopNowBtn.disabled = false;
     if (openWorldBtn) openWorldBtn.disabled = false;
     if (closeWorldBtn) closeWorldBtn.disabled = false;
+    if (fetchBansBtn) fetchBansBtn.disabled = false;
 
     quickButtons.forEach(btn => {
         btn.disabled = false;
@@ -1209,6 +1211,7 @@ function disableCommands() {
     const stopNowBtn = document.getElementById('stop-now-btn');
     const openWorldBtn = document.getElementById('open-world-btn');
     const closeWorldBtn = document.getElementById('close-world-btn');
+    const fetchBansBtn = document.getElementById('fetch-bans-btn');
 
     if (commandInput) commandInput.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
@@ -1225,6 +1228,7 @@ function disableCommands() {
     if (stopNowBtn) stopNowBtn.disabled = true;
     if (openWorldBtn) openWorldBtn.disabled = true;
     if (closeWorldBtn) closeWorldBtn.disabled = true;
+    if (fetchBansBtn) fetchBansBtn.disabled = true;
 
     quickButtons.forEach(btn => {
         btn.disabled = true;
@@ -1967,6 +1971,247 @@ async function initializeHistory() {
         console.error('[UI] FAILED to initialize history manager:', error);
         console.error('[UI] Error stack:', error.stack);
         // Continue anyway - history is not critical to UI function
+    }
+}
+
+/**
+ * ==================== BAN MANAGEMENT FUNCTIONS ====================
+ */
+
+/**
+ * Fetch and display list of banned accounts
+ */
+async function fetchBans() {
+    if (!client.isAuthenticated) {
+        addOutput('Not authenticated', 'error-message');
+        return;
+    }
+
+    try {
+        const fetchBansBtn = document.getElementById('fetch-bans-btn');
+        if (fetchBansBtn) fetchBansBtn.disabled = true;
+
+        addOutput('> banlist', 'command-message');
+
+        const response = await client.send('banlist', []);
+
+        if (response.Status === 'success' && response.Data && response.Data.BannedAccounts) {
+            displayBans(response.Data.BannedAccounts);
+            addOutput(`Loaded ${response.Data.Count} banned accounts`, 'success-output');
+        } else {
+            addOutput(`Error fetching bans: ${response.Message || 'Unknown error'}`, 'error-output');
+        }
+    } catch (error) {
+        addOutput(`Error fetching bans: ${error.message}`, 'error-output');
+        console.error('[UI] Error in fetchBans:', error);
+    } finally {
+        const fetchBansBtn = document.getElementById('fetch-bans-btn');
+        if (fetchBansBtn) fetchBansBtn.disabled = false;
+    }
+}
+
+/**
+ * Display list of banned accounts
+ */
+function displayBans(bannedAccounts) {
+    const bansList = document.getElementById('bans-list');
+
+    if (!bannedAccounts || bannedAccounts.length === 0) {
+        bansList.innerHTML = '<div class="info-message">No banned accounts</div>';
+        return;
+    }
+
+    let html = '';
+    bannedAccounts.forEach((ban, index) => {
+        const accountName = ban.AccountName || 'Unknown';
+        const expireTime = ban.BanExpireTime || 'Unknown';
+        const reason = ban.BanReason || 'No reason specified';
+
+        html += `
+            <div class="ban-item" onclick="selectBannedAccount(this, '${accountName}')">
+                <div class="ban-info">
+                    <span class="ban-account-name">${accountName}</span>
+                    <span class="ban-details" style="font-size: 11px; color: #aaa;">Expires: ${expireTime}</span>
+                    <span class="ban-reason" style="font-size: 11px; color: #ff9800;">Reason: ${reason}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    bansList.innerHTML = html;
+}
+
+/**
+ * Select a banned account and show details in sidebar
+ */
+async function selectBannedAccount(element, accountName) {
+    // Deselect all other bans
+    document.querySelectorAll('.ban-item.selected').forEach(item => {
+        item.classList.remove('selected');
+    });
+
+    // Select current ban
+    element.classList.add('selected');
+    element.dataset.accountName = accountName;
+
+    try {
+        // Fetch detailed ban info
+        const response = await client.send('baninfo', [accountName]);
+
+        if (response.Status === 'success' && response.Data) {
+            displayBanDetails(response.Data, accountName);
+        } else {
+            const detailsDiv = document.getElementById('ban-details-info');
+            detailsDiv.innerHTML = `<p style="margin: 0; color: #f44336;">Error loading details: ${response.Message}</p>`;
+        }
+    } catch (error) {
+        const detailsDiv = document.getElementById('ban-details-info');
+        detailsDiv.innerHTML = `<p style="margin: 0; color: #f44336;">Error: ${error.message}</p>`;
+        console.error('[UI] Error in selectBannedAccount:', error);
+    }
+}
+
+/**
+ * Display ban details in sidebar
+ */
+function displayBanDetails(banInfo, accountName) {
+    const detailsDiv = document.getElementById('ban-details-info');
+    const charactersSection = document.getElementById('ban-characters-section');
+    const charactersList = document.getElementById('ban-characters-list');
+    const unbanBtn = document.getElementById('unban-btn');
+    const editReasonBtn = document.getElementById('edit-reason-btn');
+
+    // Build details HTML
+    let detailsHtml = `
+        <div style="margin-bottom: 10px;">
+            <strong style="color: #fff;">Account:</strong> ${accountName}
+        </div>
+        <div style="margin-bottom: 10px;">
+            <strong style="color: #fff;">Expires:</strong> ${banInfo.BanExpireTime || 'Unknown'}
+        </div>
+        <div style="margin-bottom: 10px;">
+            <strong style="color: #fff;">Reason:</strong><br>
+            <span style="color: #ffb74d;">${banInfo.BanReason || 'No reason specified'}</span>
+        </div>
+    `;
+
+    detailsDiv.innerHTML = detailsHtml;
+
+    // Enable buttons
+    if (unbanBtn) unbanBtn.disabled = false;
+    if (editReasonBtn) editReasonBtn.disabled = false;
+
+    // Display characters if available
+    if (banInfo.Characters && banInfo.Characters.length > 0) {
+        let charsHtml = '';
+        banInfo.Characters.forEach(char => {
+            charsHtml += `
+                <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #444;">
+                    <div style="color: #fff;">${char.CharacterName}</div>
+                    <div style="font-size: 10px;">Level: ${char.Level} | Race: ${char.Race}</div>
+                </div>
+            `;
+        });
+        charactersList.innerHTML = charsHtml;
+        if (charactersSection) charactersSection.style.display = 'block';
+    } else {
+        if (charactersSection) charactersSection.style.display = 'none';
+    }
+}
+
+/**
+ * Unban selected account
+ */
+async function unbanSelectedAccount() {
+    const selected = document.querySelector('.ban-item.selected');
+    if (!selected) return;
+
+    const accountName = selected.dataset.accountName;
+    if (!accountName) {
+        addOutput('Error: Account name not available', 'error-output');
+        return;
+    }
+
+    const confirmed = confirm(`Are you sure you want to unban ${accountName}? This action cannot be undone.`);
+
+    if (confirmed) {
+        try {
+            addOutput(`Unbanning account: ${accountName}...`, 'info-output');
+
+            // Use ACE's unban command via passthrough
+            const response = await client.send('unban', [accountName]);
+
+            if (response.Status === 'success') {
+                addOutput(`Successfully unbanned: ${accountName}`, 'success-output');
+                selected.classList.remove('selected');
+                updateBanActionsSidebar();
+                // Refresh the bans list
+                await fetchBans();
+            } else {
+                addOutput(`Error unbanning: ${response.Message || 'Unknown error'}`, 'error-output');
+            }
+        } catch (error) {
+            addOutput(`Error unbanning: ${error.message}`, 'error-output');
+            console.error('[UI] Error in unbanSelectedAccount:', error);
+        }
+    }
+}
+
+/**
+ * Edit ban reason for selected account
+ */
+async function editBanReason() {
+    const selected = document.querySelector('.ban-item.selected');
+    if (!selected) return;
+
+    const accountName = selected.dataset.accountName;
+    if (!accountName) {
+        addOutput('Error: Account name not available', 'error-output');
+        return;
+    }
+
+    const newReason = prompt(`Enter new ban reason for ${accountName}:`);
+
+    if (newReason === null) {
+        return; // User cancelled
+    }
+
+    if (newReason.trim() === '') {
+        addOutput('Error: Reason cannot be empty', 'error-output');
+        return;
+    }
+
+    try {
+        addOutput(`Updating ban reason for: ${accountName}...`, 'info-output');
+
+        const response = await client.send('banreason', [accountName, newReason]);
+
+        if (response.Status === 'success') {
+            addOutput(`Ban reason updated for: ${accountName}`, 'success-output');
+            // Refresh details
+            await selectBannedAccount(selected, accountName);
+        } else {
+            addOutput(`Error updating reason: ${response.Message || 'Unknown error'}`, 'error-output');
+        }
+    } catch (error) {
+        addOutput(`Error updating reason: ${error.message}`, 'error-output');
+        console.error('[UI] Error in editBanReason:', error);
+    }
+}
+
+/**
+ * Update ban actions sidebar state
+ */
+function updateBanActionsSidebar() {
+    const selected = document.querySelector('.ban-item.selected');
+    const unbanBtn = document.getElementById('unban-btn');
+    const editReasonBtn = document.getElementById('edit-reason-btn');
+
+    if (!selected) {
+        if (unbanBtn) unbanBtn.disabled = true;
+        if (editReasonBtn) editReasonBtn.disabled = true;
+        const detailsDiv = document.getElementById('ban-details-info');
+        if (detailsDiv) detailsDiv.innerHTML = '<p style="margin: 0; text-align: center;">No banned account selected</p>';
     }
 }
 

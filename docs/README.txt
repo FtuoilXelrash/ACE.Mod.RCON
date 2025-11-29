@@ -37,6 +37,10 @@ FEATURES
 ✅ Timestamp and ACE Module display options
 ✅ Tab-specific sidebars for Console, Players, and Configuration tabs
 ✅ Responsive input layout matching console window width
+✅ Bans management tab with master-detail interface
+✅ View banned accounts with expiration times and ban reasons
+✅ Unban accounts with confirmation dialog
+✅ Edit ban reasons with free-text input
 
 QUICK START
 ===========
@@ -164,6 +168,9 @@ hello       - Get initial server state (status, version, player list,
               database info)
 status      - Get lean server status for periodic polling (no player list)
 players     - Get current player list and count
+banlist     - Get list of banned accounts
+baninfo     - Get details for a specific banned account
+banreason   - Update the reason for a specific ban
 help        - Display available ACE console commands
 
 Common ACE Console Commands (via passthrough)
@@ -220,6 +227,16 @@ Players Tab
 - Auto-refresh on player login/logoff (configurable)
 - Auto-refresh preference persists across page reloads
 - Boot and Ban player buttons (admin actions)
+
+Bans Tab
+--------
+- Master-detail interface for managing banned accounts
+- Fetch Bans button to retrieve banned accounts on-demand
+- List of banned accounts with account name, ban expiration time, and ban reason
+- Select banned account to view details and characters in sidebar
+- Unban button with confirmation dialog to safely unban accounts
+- Edit Reason button to update ban reasons with free-text input
+- View characters linked to banned accounts
 
 Configuration Tab
 -----------------
