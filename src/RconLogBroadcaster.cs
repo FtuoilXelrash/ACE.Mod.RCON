@@ -35,8 +35,9 @@ public class RconLogBroadcaster
 
     /// <summary>
     /// Initialize the broadcaster with references to the servers
+    /// Either or both servers can be null if disabled in settings
     /// </summary>
-    public void Initialize(RconServer rconServer, RconHttpServer httpServer, Settings settings)
+    public void Initialize(RconServer? rconServer, RconHttpServer? httpServer, Settings settings)
     {
         lock (lockObj)
         {

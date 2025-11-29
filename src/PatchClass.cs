@@ -93,27 +93,27 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             // Initialize authenticator with settings
             RconAuthenticator.Initialize(Settings);
 
+            // Register custom log4net appender for console log broadcasting (needed by both TCP and Web)
+            try
+            {
+                var logRepository = log4net.LogManager.GetRepository(System.Reflection.Assembly.GetAssembly(typeof(log4net.LogManager)));
+                var loggerRepository = logRepository as log4net.Repository.Hierarchy.Hierarchy;
+                if (loggerRepository != null)
+                {
+                    var rconAppender = new RconLogAppender();
+                    rconAppender.ActivateOptions();
+                    loggerRepository.Root.AddAppender(rconAppender);
+                    ModManager.Log($"[RCON] Console log broadcaster registered");
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[RCON] WARNING: Failed to register log broadcaster: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+
+            // Start TCP RCON server (if enabled)
             if (Settings.RconEnabled)
             {
-                // Register custom log4net appender for console log broadcasting
-                try
-                {
-                    var logRepository = log4net.LogManager.GetRepository(System.Reflection.Assembly.GetAssembly(typeof(log4net.LogManager)));
-                    var loggerRepository = logRepository as log4net.Repository.Hierarchy.Hierarchy;
-                    if (loggerRepository != null)
-                    {
-                        var rconAppender = new RconLogAppender();
-                        rconAppender.ActivateOptions();
-                        loggerRepository.Root.AddAppender(rconAppender);
-                        ModManager.Log($"[RCON] Console log broadcaster registered");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ModManager.Log($"[RCON] WARNING: Failed to register log broadcaster: {ex.Message}", ModManager.LogLevel.Warn);
-                }
-
-                // Start TCP RCON server
                 ModManager.Log($"[RCON] Starting RCON server on port {Settings.RconPort}...");
                 rconServer = new RconServer(Settings);
                 rconServer.Start();
@@ -121,33 +121,30 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 ModManager.Log($"[RCON] Listening for RCON connections on port {Settings.RconPort}");
                 ModManager.Log($"[RCON] Max connections: {Settings.MaxConnections}");
                 ModManager.Log($"[RCON] Verbose logging: {(Settings.EnableLogging ? "enabled" : "disabled")}");
-
-                // Start HTTP/WebSocket server for web client (if enabled)
-                if (Settings.WebRconEnabled)
-                {
-                    ModManager.Log($"[RCON] Starting web client server...");
-                    httpServer = new RconHttpServer(Settings);
-                    httpServer.Start();
-                    ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:9005/");
-
-                    // Initialize the log broadcaster with server references
-                    RconLogBroadcaster.Instance.Initialize(rconServer, httpServer, Settings);
-
-                    // Initialize WebSocket handler with HTTP server reference
-                    RconWebSocketHandler.Initialize(httpServer);
-                }
-                else
-                {
-                    ModManager.Log($"[RCON] Web RCON is disabled. Only TCP RCON available.");
-
-                    // Still initialize broadcaster with TCP server only (no WebSocket server)
-                    RconLogBroadcaster.Instance.Initialize(rconServer, null!, Settings);
-                }
             }
             else
             {
-                ModManager.Log($"[RCON] RCON is disabled in settings");
+                ModManager.Log($"[RCON] TCP RCON is disabled in settings");
             }
+
+            // Start HTTP/WebSocket server for web client (if enabled - can run independently)
+            if (Settings.WebRconEnabled)
+            {
+                ModManager.Log($"[RCON] Starting web client server on port {Settings.WebRconPort}...");
+                httpServer = new RconHttpServer(Settings);
+                httpServer.Start();
+                ModManager.Log($"[RCON] Web client available at: http://127.0.0.1:{Settings.WebRconPort}/");
+
+                // Initialize WebSocket handler with HTTP server reference
+                RconWebSocketHandler.Initialize(httpServer);
+            }
+            else
+            {
+                ModManager.Log($"[RCON] Web RCON is disabled in settings");
+            }
+
+            // Initialize the log broadcaster with whichever servers are running
+            RconLogBroadcaster.Instance.Initialize(rconServer, httpServer, Settings);
         }
         catch (Exception ex)
         {
@@ -405,7 +402,7 @@ public class Settings
     /// <summary>
     /// Enable/disable RCON functionality (TCP and WebSocket)
     /// </summary>
-    public bool RconEnabled { get; set; } = true;
+    public bool RconEnabled { get; set; } = false;
 
     /// <summary>
     /// Enable/disable Web RCON (WebSocket only)
@@ -434,9 +431,9 @@ public class Settings
 
     /// <summary>
     /// Maximum concurrent RCON connections allowed
-    /// Default: 10
+    /// Default: 3
     /// </summary>
-    public int MaxConnections { get; set; } = 10;
+    public int MaxConnections { get; set; } = 3;
 
     /// <summary>
     /// Connection timeout in seconds
@@ -448,7 +445,7 @@ public class Settings
     /// <summary>
     /// Enable verbose logging of RCON operations
     /// </summary>
-    public bool EnableLogging { get; set; } = false;
+    public bool EnableLogging { get; set; } = true;
 
     /// <summary>
     /// Enable debug mode - shows full JSON responses in web client
@@ -476,9 +473,9 @@ public class Settings
 
     /// <summary>
     /// Use ACE-style packet-based authentication instead of Rust-style URL-based authentication
-    /// Default: false (Rust-style URL auth: ws://server:port/password)
-    /// Set to true for ACE-style auth: password sent in first packet {"Command": "auth", "Password": "xxx"}
+    /// Default: true (ACE-style auth: password sent in first packet {"Command": "auth", "Password": "xxx"})
+    /// Set to false for Rust-style URL auth: ws://server:port/password
     /// When true, web client will show login landing page
     /// </summary>
-    public bool UseAceAuthentication { get; set; } = false;
+    public bool UseAceAuthentication { get; set; } = true;
 }
