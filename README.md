@@ -26,12 +26,15 @@ RCON (Remote Console) mod for Asheron's Call Emulator (ACE) server. Provides rem
 - ✅ Command and message history with dropdown selectors
 - ✅ Console message filtering (12 configurable module filters)
 - ✅ Timestamp and ACE Module display options
-- ✅ Tab-specific sidebars for Console, Players, and Configuration tabs
+- ✅ Tab-specific sidebars for Console, Players, Configuration, and Chat tabs
 - ✅ Responsive input layout matching console window width
+- ✅ Server Chat tab with real-time chat display
+- ✅ Chat type filters (General, Guild/Allegiance, Trade)
+- ✅ Customizable chat message colors per chat type
+- ✅ Timestamp display option for chat messages
 - ✅ Bans management tab with master-detail interface
-- ✅ View banned accounts with expiration times and ban reasons
+- ✅ View banned accounts with expiration times
 - ✅ Unban accounts with confirmation dialog
-- ✅ Edit ban reasons with free-text input
 
 ## Quick Start
 
@@ -138,7 +141,6 @@ The RCON implementation uses Rust RCON protocol format but with ACE CommandManag
 - Server-side log broadcasting via custom log4net appender
 - Message color coding by type:
   - **Tag-based colors** (takes priority):
-    - `[CHAT]` messages - Green (#00ff00)
     - `[AUDIT]` messages - Yellow (#ffff00)
     - `[SYSTEM]` messages - Magenta (#ff00ff)
   - **Log-level colors** (fallback):
@@ -165,6 +167,22 @@ The RCON implementation uses Rust RCON protocol format but with ACE CommandManag
   - **Timestamp** - Prefix each console message with `[HH:mm:ss]` timestamp (enabled by default)
   - **Show ACE Module** - Show/hide the ACE module name `[ACE.Server.xxx]` prefix on messages (disabled by default to reduce clutter)
 
+### Server Chat Tab
+- Real-time server chat message streaming (General, Guild, Trade)
+- Separate from console output for cleaner display
+- **Chat Type Filters**:
+  - General - Global chat messages
+  - Guild (Allegiance) - Guild/Allegiance chat messages
+  - Trade - Trade channel chat messages
+- **Display Options**:
+  - **Show Timestamp** - Prefix chat messages with `[HH:mm:ss]` (enabled by default)
+- **Customizable Chat Colors**:
+  - General - Green (#00ff00)
+  - Guild (Allegiance) - Cyan (#00ffff)
+  - Trade - Yellow (#ffff00)
+- Chat type indicator in message (e.g., `[Trade]`)
+- Filter and color preferences persist across page reloads
+
 ### Players Tab
 - Online player list with details (name, level, race, account name)
 - Player count display
@@ -176,11 +194,10 @@ The RCON implementation uses Rust RCON protocol format but with ACE CommandManag
 ### Bans Tab
 - Master-detail interface for managing banned accounts
 - Fetch Bans button to retrieve banned accounts on-demand
-- List of banned accounts with account name, ban expiration time, and ban reason
-- Select banned account to view details and characters in sidebar
+- List of banned accounts with account name and ban expiration time
+- Select banned account to view details in sidebar
 - Unban button with confirmation dialog to safely unban accounts
-- Edit Reason button to update ban reasons with free-text input
-- View characters linked to banned accounts
+- Ban expiration time display
 
 ### Configuration Tab
 - **Console Colors**: Customize message colors with color pickers

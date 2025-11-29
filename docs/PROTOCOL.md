@@ -430,6 +430,82 @@ Get detailed information about a specific banned account, including characters.
 }
 ```
 
+### baninfo
+
+Get detailed information about a specific banned account.
+
+**Request:**
+```json
+{
+  "Command": "baninfo",
+  "Args": ["accountname"],
+  "Identifier": 6
+}
+```
+
+**Response:**
+```json
+{
+  "Identifier": 6,
+  "Status": "success",
+  "Message": "Ban details for account",
+  "Data": {
+    "AccountName": "testaccount",
+    "BanExpireTime": "2025-12-31 23:59:59",
+    "BanReason": "RMT activity detected"
+  },
+  "Debug": false
+}
+```
+
+**Data Fields:**
+- **AccountName** (string): Account name
+- **BanExpireTime** (string): Ban expiration time (null if permanent ban)
+- **BanReason** (string): Reason for the ban
+
+**Error Response (account not found or not banned):**
+```json
+{
+  "Identifier": 6,
+  "Status": "error",
+  "Message": "Account 'unknown' does not exist or is not banned",
+  "Debug": false
+}
+```
+
+### unban
+
+Unban a specific account by removing ban expiration and reason.
+
+**Request:**
+```json
+{
+  "Command": "unban",
+  "Args": ["accountname"],
+  "Identifier": 7
+}
+```
+
+**Response:**
+```json
+{
+  "Identifier": 7,
+  "Status": "success",
+  "Message": "Account 'accountname' has been unbanned",
+  "Debug": false
+}
+```
+
+**Error Response (account not found):**
+```json
+{
+  "Identifier": 7,
+  "Status": "error",
+  "Message": "Account 'unknown' does not exist",
+  "Debug": false
+}
+```
+
 ### banreason
 
 Update the ban reason for a specific banned account.
@@ -439,14 +515,14 @@ Update the ban reason for a specific banned account.
 {
   "Command": "banreason",
   "Args": ["accountname", "new reason text"],
-  "Identifier": 7
+  "Identifier": 8
 }
 ```
 
 **Response:**
 ```json
 {
-  "Identifier": 7,
+  "Identifier": 8,
   "Status": "success",
   "Message": "Ban reason updated (or attempted)",
   "Debug": false
