@@ -2,7 +2,7 @@
   "Name": "RCON",
   "Author": "",
   "Description": "RCON mod - remote console access for server management",
-  "Version": "1.0.108",
+  "Version": "1.0.130",
   "Enabled": true,
   "HotReload": true,
   "RegisterCommands": false,
