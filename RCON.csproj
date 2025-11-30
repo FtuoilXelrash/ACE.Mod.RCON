@@ -82,7 +82,8 @@
 			<Link>Meta.json</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Settings.json">
+		<None Update="config/Settings.json">
+			<Link>Settings.json</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
